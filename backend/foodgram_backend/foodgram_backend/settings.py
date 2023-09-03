@@ -42,6 +42,7 @@ INSTALLED_APPS = [
     'djoser',
     'users.apps.UsersConfig',
     'api.apps.ApiConfig',
+    'recipes.apps.RecipesConfig',
 ]
 
 MIDDLEWARE = [
@@ -116,6 +117,8 @@ USE_I18N = True
 
 USE_TZ = True
 
+AUTH_USER_MODEL = 'users.CustomUser'
+
 
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/4.2/howto/static-files/
@@ -127,7 +130,10 @@ STATIC_URL = 'static/'
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
+
 REST_FRAMEWORK = {
+    'DEFAULT_PAGINATION_CLASS': 'api.paginators.CustomPagination',
+    'PAGE_SIZE': 10,
     'DEFAULT_PERMISSION_CLASSES': [
         'rest_framework.permissions.IsAuthenticated',
     ],
