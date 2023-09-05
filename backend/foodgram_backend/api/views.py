@@ -2,10 +2,15 @@ from django.shortcuts import get_object_or_404
 from djoser.views import UserViewSet as DjUserViewSet
 from rest_framework.response import Response
 from rest_framework.viewsets import ModelViewSet, ReadOnlyModelViewSet
-from .serializers import (ShortRecipeSerializer, TagSerializer, IngredientSerializer,
+from .serializers import (ShortRecipeSerializer, TagSerializer,
+                          IngredientSerializer,
                           RecipeSerializer, UserSubscribeSerializer,
                           UserSubscribeSerializer)
-from recipes.models import Favorite, Tag, Ingredient, Recipe
+from recipes.models import (Favorite,
+                            Tag,
+                            Ingredient,
+                            Recipe,
+                            Cart)
 from users.models import CustomUser, Subscribe
 from .paginators import CustomPagination
 from rest_framework.decorators import action
@@ -14,6 +19,10 @@ from rest_framework.status import (HTTP_400_BAD_REQUEST,
                                    HTTP_204_NO_CONTENT,
                                    HTTP_201_CREATED)
 
+from django.http import FileResponse
+from reportlab.pdfgen import canvas
+from io import BytesIO
+from .services import get_cart_data_for_user
 
 User = get_user_model()
 
@@ -94,14 +103,14 @@ class RecipeViewSet(ModelViewSet):
     serializer_class = RecipeSerializer
     pagination_class = CustomPagination
     add_serializer = ShortRecipeSerializer
-    link_model = Subscribe
+    link_model = Favorite
 
     @action(detail=True)
     def favorite(self, request, id):
         '''
         Аналогичная функция, что и с User.
         Данная функцию является маршрутом 
-        либо для, POST либо для DELETE.
+        либо для POST, либо для DELETE.
 
         '''
     @favorite.mapping.post
@@ -132,3 +141,61 @@ class RecipeViewSet(ModelViewSet):
                             status=HTTP_400_BAD_REQUEST)
         is_favorite.delete()
         return Response(status=HTTP_204_NO_CONTENT)
+
+    @action(detail=True)
+    def shopping_cart(self, request, pk):
+        '''
+        Аналогичная функция, что и с User.
+        Данная функцию является маршрутом 
+        либо для POST, либо для DELETE.
+
+        '''
+
+    @shopping_cart.mapping.post
+    def create_shopping_cart(self, request, pk):
+        recipe = get_object_or_404(Recipe, pk=pk)
+        existing_cart = Cart.objects.filter(user=request.user,
+                                            recipe=recipe).first()
+        if existing_cart:
+            return Response({'errors':
+                             'Вы уже добавили этот рецепт в список покупок'},
+                             status=HTTP_400_BAD_REQUEST)
+        
+        link_cart = Cart.objects.create(user=request.user,
+                                        recipe=recipe)
+        link_cart.save()
+        serializer = self.add_serializer(recipe)
+        return Response(serializer.data, HTTP_201_CREATED)
+    
+    @shopping_cart.mapping.delete
+    def delete_shopping_cart(self, request, pk):
+        recipe = get_object_or_404(Recipe, pk=pk)
+        try:
+            is_cart = Cart.objects.get(user=request.user,
+                                       recipe=recipe)
+        except Cart.DoesNotExist:
+            return Response({'errors':
+                             'Рецепт и так не добавлен в список покупок!'},
+                            status=HTTP_400_BAD_REQUEST)
+        is_cart.delete()
+        return Response(status=HTTP_204_NO_CONTENT)
+
+    @action(detail=False, methods=("get",))
+    def download_shopping_cart(self, request):
+        user = request.user
+        cart_data = get_cart_data_for_user(request.user)
+        
+        buffer = BytesIO()
+        p = canvas.Canvas(buffer)
+        p.drawString(100, 750, "Список покупок:")
+        y = 700
+        for item in cart_data:
+            p.drawString(100, y, f"- {item.name}: {item.quantity} {item.unit}")
+            y -= 20
+        p.showPage()
+        p.save()
+        buffer.seek(0)
+        response = FileResponse(buffer,
+        as_attachment=True,
+                                filename=f'{user}_shopping_cart.pdf')
+        return response

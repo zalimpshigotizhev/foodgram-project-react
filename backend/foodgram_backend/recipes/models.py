@@ -173,3 +173,29 @@ class Favorite(models.Model):
 
     def __str__(self) -> str:
         return f'{self.user} добавил в фавориты рецепт {self.recipe}'
+
+
+class Cart(models.Model):
+    recipe = models.ForeignKey(
+        Recipe,
+        verbose_name="Рецепты списка покупок",
+        related_name='in_carts',
+        on_delete=models.CASCADE
+    )
+    user = models.ForeignKey(
+        User,
+        verbose_name="Автор списка покупок",
+        related_name='in_carts',
+        on_delete=models.CASCADE
+    )
+    date_add = models.DateTimeField(
+        verbose_name="Дата и время добавления",
+        auto_now=True,
+    )
+
+    class Meta:
+        verbose_name = "Список покупок"
+        verbose_name_plural = "Списки покупок"
+
+    def __str__(self):
+        return f'{self.user} добавил в список покупок {self.recipe}'

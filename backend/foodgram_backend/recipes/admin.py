@@ -3,7 +3,8 @@ from .models import (
     Recipe,
     Tag,
     Ingredient,
-    Favorite
+    Favorite,
+    Cart
 )
 
 
@@ -24,4 +25,9 @@ class IngredientAdmin(admin.ModelAdmin):
 
 @admin.register(Favorite)
 class FavoriteAdmin(admin.ModelAdmin):
+    ...
+
+
+@admin.register(Cart)
+class CartAdmin(admin.ModelAdmin):
     ...
