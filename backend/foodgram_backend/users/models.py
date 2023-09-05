@@ -37,18 +37,38 @@ class CustomUser(AbstractUser):
         verbose_name_plural = "Пользователи"
 
 
-class Subscription(models.Model):
-    author = models.ForeignKey(CustomUser,
-                               on_delete=models.CASCADE,
-                               related_name='subscribers')
-    user = models.ForeignKey(CustomUser,
-                             on_delete=models.CASCADE,
-                             related_name='subscriptions')
+class Subscribe(models.Model):
+    user = models.ForeignKey(
+        CustomUser,
+        on_delete=models.CASCADE,
+        related_name='subscriptions',
+    )
+    author = models.ForeignKey(
+        CustomUser,
+        on_delete=models.CASCADE,
+        related_name='subscribers',
+    )
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
+        unique_together = ('user', 'author')
         verbose_name = "Подписка"
         verbose_name_plural = "Подписки"
 
-    def __str__(self) -> str:
+    def __str__(self):
         return f"{self.user.username} -> {self.author.username}"
+# class Subscription(models.Model):
+#     author = models.ForeignKey(CustomUser,
+#                                on_delete=models.CASCADE,
+#                                related_name='subscribers')
+#     user = models.ForeignKey(CustomUser,
+#                              on_delete=models.CASCADE,
+#                              related_name='subscriptions')
+#     created_at = models.DateTimeField(auto_now_add=True)
+
+#     class Meta:
+#         verbose_name = "Подписка"
+#         verbose_name_plural = "Подписки"
+
+#     def __str__(self) -> str:
+#         return f"{self.user.username} -> {self.author.username}"

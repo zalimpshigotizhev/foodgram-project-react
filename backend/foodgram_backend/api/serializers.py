@@ -4,6 +4,7 @@ from rest_framework.serializers import (ModelSerializer,
                                         CharField)
 from django.contrib.auth import get_user_model
 from recipes.models import Recipe, Tag, Ingredient
+from users.models import Subscribe
 
 User = get_user_model()
 
@@ -12,6 +13,7 @@ class CustomUserSerializer(ModelSerializer):
     email = EmailField(required=True)
     first_name = CharField(required=True)
     last_name = CharField(required=True)
+    is_subscribed = SerializerMethodField()
 
     class Meta:
         model = User
@@ -21,17 +23,29 @@ class CustomUserSerializer(ModelSerializer):
             "username",
             "first_name",
             "last_name",
-            "password"
+            "password",
+            "is_subscribed"
         )
-        read_only_fields = ("password",)
+        extra_kwargs = {"password": {"write_only": True}}
 
-    # def to_representation(self, instance):
-    #     '''Данная функция помогает скрывать пароль при GET-запросе'''
-    #     #############################################################
-    #     # Если запрос GET, исключаем поле "password"
-    #     if self.context['request'].method == 'GET':
-    #         self.fields.pop('password')
-    #     return super().to_representation(instance)
+    def get_is_subscribed(self, obj: User) -> bool:
+        """Проверка подписки пользователей.
+
+        Определяет - подписан ли текущий пользователь
+        на просматриваемого пользователя.
+
+        Args:
+            obj (User): Пользователь, на которого проверяется подписка.
+
+        Returns:
+            bool: True, если подписка есть. Во всех остальных случаях False.
+        """
+        user = self.context.get("request").user
+
+        if user.is_anonymous or (user == obj):
+            return False
+
+        return user.subscriptions.filter(author=obj).exists()
 
     def create(self, validated_data):
         user = User(
