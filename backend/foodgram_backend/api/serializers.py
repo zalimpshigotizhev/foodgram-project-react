@@ -1,10 +1,12 @@
 from rest_framework.serializers import (ModelSerializer,
                                         SerializerMethodField,
                                         EmailField,
-                                        CharField)
+                                        CharField,
+                                        ReadOnlyField)
 from django.contrib.auth import get_user_model
 from recipes.models import Recipe, Tag, Ingredient
 from users.models import Subscribe
+from drf_extra_fields.fields import Base64ImageField
 
 User = get_user_model()
 
@@ -26,6 +28,7 @@ class CustomUserSerializer(ModelSerializer):
             "password",
             "is_subscribed"
         )
+        read_only_fields = ("__all__",)
         extra_kwargs = {"password": {"write_only": True}}
 
     def get_is_subscribed(self, obj: User) -> bool:
@@ -74,7 +77,12 @@ class IngredientSerializer(ModelSerializer):
 
 
 class RecipeSerializer(ModelSerializer):
-    ingredients = IngredientSerializer(many=True)
+    ingredients = SerializerMethodField()
+    is_favorited = SerializerMethodField()
+    is_in_shopping_cart = SerializerMethodField()
+    tags = TagSerializer(many=True, read_only=True)
+    author = CustomUserSerializer(read_only=True)
+    image = ReadOnlyField(source='image.url')
 
     class Meta:
         model = Recipe
@@ -82,12 +90,38 @@ class RecipeSerializer(ModelSerializer):
                   'tags',
                   'author',
                   'ingredients',
+                  'is_favorited',
+                  'is_in_shopping_cart',
                   'name',
                   'image',
                   'text',
                   'cooking_time')
-
+        read_only_fields = (
+            'is_favorited',
+            'is_in_shopping_cart',
+        )
       
+    def get_ingredients(self, obj):
+        ingredients = obj.ingredients.all()
+        serialized_ingredients = IngredientSerializer(ingredients,
+                                                      many=True).data
+        return serialized_ingredients
+    
+    def get_is_favorited(self, obj):
+        user = self.context['request'].user
+        if user.is_authenticated:
+            return obj.favorites.filter(user=user).exists()
+        return False
+ 
+    def get_is_in_shopping_cart(self, recipe):
+        user = self.context.get("view").request.user
+
+        if user.is_anonymous:
+            return False
+
+        return user.in_carts.filter(recipe=recipe).exists()
+       
+
 class ShortRecipeSerializer(ModelSerializer):
     """Сериализатор для модели Recipe.
     Определён укороченный набор полей для некоторых эндпоинтов.

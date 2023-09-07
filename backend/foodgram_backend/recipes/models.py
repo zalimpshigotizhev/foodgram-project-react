@@ -1,6 +1,8 @@
 from django.db import models
 from django.core.validators import MinValueValidator, MaxValueValidator
 from django.contrib.auth import get_user_model
+from api.constants import Const
+from PIL import Image
 
 User = get_user_model()
 
@@ -55,40 +57,44 @@ class Ingredient(models.Model):
 
 class Recipe(models.Model):
     ''' Рецепты '''
+    name = models.CharField(
+        verbose_name=("Название рецепта"),
+        max_length=56
+    )
     author = models.ForeignKey(
         User,
         verbose_name=("Автор"),
         related_name='recipes',
         on_delete=models.SET_NULL,
         null=True,
-        )
-    ingredients = models.ManyToManyField(
-        Ingredient,
-        related_name='recipes',
-        blank=False,
-
     )
-
     tags = models.ManyToManyField(
         Tag,
+        verbose_name=("Тэги"),
         related_name='recipes',
         blank=False,
     )
-    image = models.ImageField(
-        ('картинка'),
-        upload_to='recipe_img/',
-        blank=True,
+    ingredients = models.ManyToManyField(
+        Ingredient,
+        verbose_name=("Ингредиенты"),
+        related_name='recipes',
+        blank=False,
     )
-    name = models.CharField(
-        ('название рецепта'),
-        max_length=56
+    pub_date = models.DateTimeField(
+        verbose_name=("Дата и время публикации"),
+        auto_now_add=True,
+        editable=False
+    )
+    image = models.ImageField(
+        verbose_name=("Картинка"),
+        upload_to='recipe_img/',
     )
     text = models.TextField(
-        ('текст'),
+        verbose_name=("Текст"),
         max_length=1024
     )
     cooking_time = models.PositiveIntegerField(
-        ('время приготовления'),
+        verbose_name=("Время приготовления"),
         default=0,
         validators=(
             MinValueValidator(
@@ -96,7 +102,7 @@ class Recipe(models.Model):
                 'Нужно указать время приготовления'
             ),
             MaxValueValidator(
-                500,
+                300,
                 'Слишком долго готовить!'
             )
         )
@@ -105,10 +111,16 @@ class Recipe(models.Model):
     class Meta:
         verbose_name = 'Рецепт'
         verbose_name_plural = 'Рецепты'
+        ordering = ("-pub_date",)
 
     def __str__(self):
         return self.name
-
+    
+    def save(self, *args, **kwargs) -> None:
+        super().save(*args, **kwargs)
+        image = Image.open(self.image.path)
+        image.thumbnail(Const.RECIPE_IMAGE_SIZE)
+        image.save(self.image.path)
 
 class AmountIngredient(models.Model):
     """Количество ингридиентов в блюде. """

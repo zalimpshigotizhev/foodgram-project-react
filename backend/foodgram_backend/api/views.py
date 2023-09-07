@@ -1,38 +1,40 @@
 from django.shortcuts import get_object_or_404
+from api.permissions import OwnerUserOrReadOnly
 from djoser.views import UserViewSet as DjUserViewSet
 from rest_framework.response import Response
 from rest_framework.viewsets import ModelViewSet, ReadOnlyModelViewSet
-from .serializers import (ShortRecipeSerializer, TagSerializer,
-                          IngredientSerializer,
-                          RecipeSerializer, UserSubscribeSerializer,
-                          UserSubscribeSerializer)
+from api.serializers import (ShortRecipeSerializer, TagSerializer,
+                             IngredientSerializer,
+                             RecipeSerializer, UserSubscribeSerializer,
+                             UserSubscribeSerializer)
 from recipes.models import (Favorite,
                             Tag,
                             Ingredient,
                             Recipe,
                             Cart)
 from users.models import CustomUser, Subscribe
-from .paginators import CustomPagination
+from api.paginators import CustomPagination
 from rest_framework.decorators import action
 from django.contrib.auth import get_user_model
 from rest_framework.status import (HTTP_400_BAD_REQUEST,
                                    HTTP_204_NO_CONTENT,
                                    HTTP_201_CREATED)
-
+from api import permissions
 from django.http import FileResponse
-from reportlab.pdfgen import canvas
-from io import BytesIO
-from .services import get_cart_data_for_user
+from .constants import Const
+from django.utils import translation
+from django.db.models import Q
 
 User = get_user_model()
 
 
 class CustomUserViewSet(DjUserViewSet):
     pagination_class = CustomPagination
+    permission_classes = (permissions.DjangoModelPermissions,)
     add_serializer = UserSubscribeSerializer
     link_model = Subscribe
 
-    @action(detail=True)
+    @action(detail=True, permission_classes=(OwnerUserOrReadOnly,))
     def subscribe(self, request, id):
         '''
 
@@ -91,19 +93,37 @@ class CustomUserViewSet(DjUserViewSet):
 class TagViewSet(ReadOnlyModelViewSet):
     queryset = Tag.objects.all()
     serializer_class = TagSerializer
+    permission_classes = (permissions.AdminOrReadOnly,)
 
 
 class IngredientViewSet(ReadOnlyModelViewSet):
     queryset = Ingredient.objects.all()
     serializer_class = IngredientSerializer
+    permission_classes = (permissions.AdminOrReadOnly,)
+
+    def get_queryset(self):
+        query = self.request.query_params.get('query', '').strip()
+        language = translation.get_language()
+
+        # Преобразование латинских символов в кириллицу
+        if language == 'ru':
+            query = query.translate(str.maketrans('abcdefghijklmnopqrstuvwxyz', 'абцдефгхийклмнопкрстуввуз'))
+
+        # Преобразование прописных букв в строчные
+        query = query.lower()
+
+        # Поиск ингредиентов с соответствующими именами
+        queryset = Ingredient.objects.filter(Q(name__startswith=query) | Q(name__icontains=query))
+        
+        return queryset
 
 
 class RecipeViewSet(ModelViewSet):
     queryset = Recipe.objects.select_related('author')
+    permission_classes = (permissions.AuthorStaffOrReadOnly,)
     serializer_class = RecipeSerializer
     pagination_class = CustomPagination
     add_serializer = ShortRecipeSerializer
-    link_model = Favorite
 
     @action(detail=True)
     def favorite(self, request, id):
@@ -133,7 +153,7 @@ class RecipeViewSet(ModelViewSet):
     def delete_favorite(self, request, pk):
         recipe = get_object_or_404(Recipe, pk=pk)
         try:
-            is_favorite = Favorite.objects.get(user=request.user,
+            is_favorite = Favorite.objects.filter(user=request.user,
                                                  recipe=recipe)
         except Favorite.DoesNotExist:
             return Response({'errors':
@@ -146,7 +166,7 @@ class RecipeViewSet(ModelViewSet):
     def shopping_cart(self, request, pk):
         '''
         Аналогичная функция, что и с User.
-        Данная функцию является маршрутом 
+        Данная функцию является маршрутом
         либо для POST, либо для DELETE.
 
         '''
@@ -182,20 +202,4 @@ class RecipeViewSet(ModelViewSet):
 
     @action(detail=False, methods=("get",))
     def download_shopping_cart(self, request):
-        user = request.user
-        cart_data = get_cart_data_for_user(request.user)
-        
-        buffer = BytesIO()
-        p = canvas.Canvas(buffer)
-        p.drawString(100, 750, "Список покупок:")
-        y = 700
-        for item in cart_data:
-            p.drawString(100, y, f"- {item.name}: {item.quantity} {item.unit}")
-            y -= 20
-        p.showPage()
-        p.save()
-        buffer.seek(0)
-        response = FileResponse(buffer,
-        as_attachment=True,
-                                filename=f'{user}_shopping_cart.pdf')
-        return response
+        ...
