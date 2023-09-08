@@ -122,6 +122,7 @@ class Recipe(models.Model):
         image.thumbnail(Const.RECIPE_IMAGE_SIZE)
         image.save(self.image.path)
 
+
 class AmountIngredient(models.Model):
     """Количество ингридиентов в блюде. """
 
@@ -170,7 +171,7 @@ class Favorite(models.Model):
     )
     recipe = models.ForeignKey(
         Recipe,
-        related_name="favorites",
+        related_name="is_favorited",
         verbose_name="рецепт",
         on_delete=models.CASCADE
     )

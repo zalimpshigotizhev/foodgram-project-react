@@ -4,6 +4,7 @@ from .models import (
     Tag,
     Ingredient,
     Favorite,
+    AmountIngredient,
     Cart
 )
 
@@ -30,4 +31,9 @@ class FavoriteAdmin(admin.ModelAdmin):
 
 @admin.register(Cart)
 class CartAdmin(admin.ModelAdmin):
+    ...
+
+
+@admin.register(AmountIngredient)
+class AmountIngredientAdmin(admin.ModelAdmin):
     ...
