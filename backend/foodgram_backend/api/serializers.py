@@ -4,9 +4,13 @@ from rest_framework.serializers import (ModelSerializer,
                                         CharField,
                                         ReadOnlyField)
 from django.contrib.auth import get_user_model
-from recipes.models import Recipe, Tag, Ingredient
+from recipes.models import Recipe, Tag, Ingredient, CountIngredient
 from users.models import Subscribe
 from drf_extra_fields.fields import Base64ImageField
+from rest_framework.response import Response
+from rest_framework.status import (HTTP_400_BAD_REQUEST,
+                                   HTTP_204_NO_CONTENT,
+                                   HTTP_201_CREATED)
 
 User = get_user_model()
 
@@ -31,23 +35,10 @@ class CustomUserSerializer(ModelSerializer):
         read_only_fields = ("__all__",)
         extra_kwargs = {"password": {"write_only": True}}
 
-    def get_is_subscribed(self, obj: User) -> bool:
-        """Проверка подписки пользователей.
-
-        Определяет - подписан ли текущий пользователь
-        на просматриваемого пользователя.
-
-        Args:
-            obj (User): Пользователь, на которого проверяется подписка.
-
-        Returns:
-            bool: True, если подписка есть. Во всех остальных случаях False.
-        """
+    def get_is_subscribed(self, obj):
         user = self.context.get("request").user
-
         if user.is_anonymous or (user == obj):
             return False
-
         return user.subscriptions.filter(author=obj).exists()
 
     def create(self, validated_data):
@@ -76,6 +67,26 @@ class IngredientSerializer(ModelSerializer):
         read_only_fields = ("__all__",)
 
 
+class IngredientAmountSerializer(ModelSerializer):
+    id = SerializerMethodField()
+    name = SerializerMethodField()
+    measurement_unit = SerializerMethodField()
+
+    class Meta:
+        model = CountIngredient
+        fields = ('id', 'amount', 'name', 'measurement_unit')
+        read_only_fields = ("__all__",)
+
+    def get_name(self, obj):
+        return obj.ingredient.name
+    
+    def get_measurement_unit(self, obj):
+        return obj.ingredient.measurement_unit
+    
+    def get_id(self, obj):
+        return obj.ingredient.id
+
+
 class RecipeSerializer(ModelSerializer):
     ingredients = SerializerMethodField()
     is_favorited = SerializerMethodField()
@@ -100,10 +111,10 @@ class RecipeSerializer(ModelSerializer):
             'is_favorited',
             'is_in_shopping_cart',
         )
-      
+
     def get_ingredients(self, obj):
-        ingredients = obj.ingredients.all()
-        serialized_ingredients = IngredientSerializer(ingredients,
+        ingredients = CountIngredient.objects.filter(recipe=obj)
+        serialized_ingredients = IngredientAmountSerializer(ingredients,
                                                       many=True).data
         return serialized_ingredients
     
@@ -120,6 +131,32 @@ class RecipeSerializer(ModelSerializer):
             return False
 
         return user.in_carts.filter(recipe=recipe).exists()
+    
+    # def create(self, validated_data:dict):
+    #     # data_ingredients = validated_data['ingredients']
+    #     # data_tags = validated_data['tags']
+    #     # for data_ingredient in data_ingredients:
+            
+    #     #     measurement_unit = ingredient['measurement_unit']
+    #     #     new_ingredient = Ingredient.objects.create(name=name,
+    #     #                                                measurement_unit=measurement_unit)
+    #     #     new_ingredient.save()
+    #     user = self.context['request'].user
+    #     # ingredients = validated_data['ingredients']
+    #     # tags = validated_data['tags']
+    #     recipe = Recipe.objects.create(author=user, **validated_data)
+    #     # recipe.tags.set(tags)
+    #     return recipe
+    def create(self, validated_data):
+        user = User(
+            email=validated_data["email"],
+            username=validated_data["username"],
+            first_name=validated_data["first_name"],
+            last_name=validated_data["last_name"],
+        )
+        user.set_password(validated_data["password"])
+        user.save()
+        return user
 
 
 class ShortRecipeSerializer(ModelSerializer):

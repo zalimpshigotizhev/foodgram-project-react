@@ -1,4 +1,3 @@
-
 import os
 from pathlib import Path
 from decouple import Csv, config
@@ -35,6 +34,7 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'rest_framework',
+    'django_filters',
     'rest_framework.authtoken',
     'djoser',
     'users.apps.UsersConfig',
@@ -115,7 +115,7 @@ AUTH_PASSWORD_VALIDATORS = [
     },
 ]
 
-MEDIA_URL = "/app/media/"
+MEDIA_URL = "media/"
 MEDIA_ROOT = BASE_DIR / MEDIA_URL
 # Internationalization
 # https://docs.djangoproject.com/en/4.2/topics/i18n/

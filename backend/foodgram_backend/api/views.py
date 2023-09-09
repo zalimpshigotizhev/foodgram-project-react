@@ -11,28 +11,27 @@ from api.serializers import (ShortRecipeSerializer,
 from recipes.models import (Favorite,
                             Tag,
                             Ingredient,
-                            AmountIngredient,
+                            CountIngredient,
                             Recipe,
                             Cart)
 from users.models import CustomUser, Subscribe
-from api.paginators import CustomPagination
+from api.paginators import CustomPagination, NoPagination
 from rest_framework.decorators import action
 from django.contrib.auth import get_user_model
 from rest_framework.status import (HTTP_400_BAD_REQUEST,
                                    HTTP_204_NO_CONTENT,
-                                   HTTP_201_CREATED,
-                                   HTTP_200_OK)
+                                   HTTP_201_CREATED)
 from api import permissions
 from django.http import HttpResponse
 from django.utils import translation
-from django.db.models import Q, Sum
+from django.db.models import Q
+
 
 User = get_user_model()
 
 
 class CustomUserViewSet(DjUserViewSet):
     pagination_class = CustomPagination
-    permission_classes = (permissions.DjangoModelPermissions,)
     add_serializer = UserSubscribeSerializer
     link_model = Subscribe
 
@@ -54,10 +53,12 @@ class CustomUserViewSet(DjUserViewSet):
         existing_subscription = Subscribe.objects.filter(user=request.user,
                                                          author=author).first()
         if existing_subscription:
-            return Response({'detail': 'Вы уже подписаны на этого автора'},
+            return Response({'detail':
+                             'Вы уже подписаны на этого автора'},
                             status=HTTP_400_BAD_REQUEST)
         if request.user.username == author.username:
-            return Response({'detail': 'Вы не можете подписаться на самого себя'},
+            return Response({'detail':
+                             'Вы не можете подписаться на самого себя'},
                             status=HTTP_400_BAD_REQUEST)
         # Создайте новую подписку
         subscription = Subscribe.objects.create(user=request.user,
@@ -76,14 +77,13 @@ class CustomUserViewSet(DjUserViewSet):
             subscription = Subscribe.objects.get(user=request.user,
                                                  author=author)
         except Subscribe.DoesNotExist:
-            return Response({'errors':'Вы уже отписались!'},status=HTTP_400_BAD_REQUEST)
+            return Response({'errors': 'Вы уже отписались!'},
+                            status=HTTP_400_BAD_REQUEST)
 
         subscription.delete()
         return Response(status=HTTP_204_NO_CONTENT)
 
-    @action(
-        methods=("get",), detail=False
-    )
+    @action(methods=("get",), detail=False)
     def subscriptions(self, request):
         pages = self.paginate_queryset(
             User.objects.filter(subscribers__user=self.request.user)
@@ -95,20 +95,18 @@ class CustomUserViewSet(DjUserViewSet):
 class TagViewSet(ReadOnlyModelViewSet):
     queryset = Tag.objects.all()
     serializer_class = TagSerializer
+    pagination_class = None
     permission_classes = (permissions.AdminOrReadOnly,)
 
 
 class IngredientViewSet(ReadOnlyModelViewSet):
     queryset = Ingredient.objects.all()
     serializer_class = IngredientSerializer
+    pagination_class = None
     permission_classes = (permissions.AdminOrReadOnly,)
 
     def get_queryset(self):
-        query = self.request.query_params.get('query', '').strip()
-        language = translation.get_language()
-        if language == 'ru':
-            query = query.translate(str.maketrans('abcdefghijklmnopqrstuvwxyz', 'абцдефгхийклмнопкрстуввуз'))
-        query = query.lower()
+        query = self.request.query_params.get('name', '').strip().lower()
         queryset = Ingredient.objects.filter(Q(name__startswith=query) |
                                              Q(name__icontains=query))
         return queryset
@@ -123,14 +121,20 @@ class RecipeViewSet(ModelViewSet):
 
     def get_queryset(self):
         queryset = super().get_queryset()
-        is_favorited = self.request.query_params.get('is_favorited')
-        carts = self.request.query_params.get('is_in_shopping_cart')
+        user = self.request.user
+        query_params = self.request.query_params
+        is_favorited = query_params.get('is_favorited')
+        carts = query_params.get('is_in_shopping_cart')
+        tags = query_params.getlist('tags')
 
         if carts == '1':
-            queryset = queryset.filter(in_carts__user=self.request.user)
+            queryset = queryset.filter(in_carts__user=user)
 
         if is_favorited == '1':
-            queryset = queryset.filter(is_favorited__user=self.request.user)
+            queryset = queryset.filter(is_favorited__user=user)
+        
+        if tags:
+            queryset = queryset.filter(tags__slug__in=tags)
         return queryset
 
     @action(detail=True)
@@ -211,16 +215,16 @@ class RecipeViewSet(ModelViewSet):
 
     @action(detail=False, methods=("get",))
     def download_shopping_cart(self, request):
-        recipes = Recipe.objects.filter(in_carts__user=request.user)
-        ingredients_list = {}
+        recipes = Recipe.objects.filter(in_carts__user=request.user) # Рецепты Юзера
+        ingredients_list = {} #Словарь в который нужно будет добавить
         for recipe in recipes:
             ingredients = recipe.ingredients.all()
             for ingredient in ingredients:
-                amount = AmountIngredient.objects.get(recipe=recipe, ingredients=ingredient).amount
+                amount = CountIngredient.objects.get(recipe=recipe, ingredient=ingredient).amount
                 if ingredients_list.get(str(ingredient), False):
                     ingredients_list[str(ingredient)] += amount
                 else:
                     ingredients_list[str(ingredient)] = amount
-        response = HttpResponse("\n".join(map(lambda ing: f"{str(ing[0])} - {ing[1]}", ingredients_list.items())), content_type="text/plain")
+        response = HttpResponse("\n".join(map(lambda ing: f"{str(ing[0])} - {ing[1]} ", ingredients_list.items())), content_type="text/plain")
         response["Content-Disposition"] = 'attachment; filename="shopping_cart.txt"'
         return response

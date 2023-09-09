@@ -77,8 +77,9 @@ class Recipe(models.Model):
     ingredients = models.ManyToManyField(
         Ingredient,
         verbose_name=("Ингредиенты"),
-        related_name='recipes',
         blank=False,
+        related_name='recipes',
+        through='CountIngredient',
     )
     pub_date = models.DateTimeField(
         verbose_name=("Дата и время публикации"),
@@ -123,19 +124,15 @@ class Recipe(models.Model):
         image.save(self.image.path)
 
 
-class AmountIngredient(models.Model):
+class CountIngredient(models.Model):
     """Количество ингридиентов в блюде. """
 
     recipe = models.ForeignKey(
-        verbose_name="В каких рецептах",
-        related_name="ingredient",
-        to=Recipe,
+        Recipe,
         on_delete=models.CASCADE,
     )
-    ingredients = models.ForeignKey(
-        verbose_name="Связанные ингредиенты",
-        related_name="recipe",
-        to=Ingredient,
+    ingredient = models.ForeignKey(
+        Ingredient,
         on_delete=models.CASCADE,
     )
     amount = models.PositiveSmallIntegerField(
@@ -159,7 +156,7 @@ class AmountIngredient(models.Model):
         ordering = ("recipe",)
 
     def __str__(self) -> str:
-        return f"{self.amount} {self.ingredients}"
+        return f"{self.amount} {self.ingredient}"
 
 
 class Favorite(models.Model):

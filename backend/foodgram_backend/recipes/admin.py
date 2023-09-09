@@ -4,7 +4,7 @@ from .models import (
     Tag,
     Ingredient,
     Favorite,
-    AmountIngredient,
+    CountIngredient,
     Cart
 )
 
@@ -34,6 +34,6 @@ class CartAdmin(admin.ModelAdmin):
     ...
 
 
-@admin.register(AmountIngredient)
-class AmountIngredientAdmin(admin.ModelAdmin):
+@admin.register(CountIngredient)
+class CountIngredientAdmin(admin.ModelAdmin):
     ...
