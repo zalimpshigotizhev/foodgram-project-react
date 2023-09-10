@@ -106,9 +106,9 @@ class IngredientViewSet(ReadOnlyModelViewSet):
 
     def get_queryset(self):
         query = self.request.query_params.get('name', '').strip().lower()
-        queryset = Ingredient.objects.filter(Q(name__startswith=query) |
-                                             Q(name__icontains=query))
-        return queryset
+        return Ingredient.objects.filter(
+            Q(name__startswith=query) | Q(name__icontains=query)
+        )
 
 
 class RecipeViewSet(ModelViewSet):
@@ -133,7 +133,7 @@ class RecipeViewSet(ModelViewSet):
             queryset = queryset.filter(is_favorited__user=user)
 
         if tags:
-            queryset = queryset.filter(tags__slug__in=tags)
+            return queryset.filter(tags__slug__in=tags)
         return queryset
 
     @action(detail=True)

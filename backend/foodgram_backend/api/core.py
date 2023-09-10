@@ -1,7 +1,5 @@
-
-
 class Defs:
-    def id_and_amount_pull_out_from_dict(list_dicts_):
+    def id_and_amount_pull_out_from_dict(self, list_dicts_):
         ''' Вытаскивает id и amount из
             request.context['ingredients'] в виде кортежа'''
         lst_id = []

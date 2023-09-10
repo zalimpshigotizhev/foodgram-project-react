@@ -111,9 +111,7 @@ class RecipeSerializer(ModelSerializer):
 
     def get_ingredients(self, obj):
         ingredients = CountIngredient.objects.filter(recipe=obj)
-        serialized_ingredients = IngredientAmountSerializer(
-            ingredients, many=True).data
-        return serialized_ingredients
+        return IngredientAmountSerializer(ingredients, many=True).data
 
     def get_is_favorited(self, obj):
         user = self.context['request'].user
@@ -123,10 +121,8 @@ class RecipeSerializer(ModelSerializer):
 
     def get_is_in_shopping_cart(self, recipe):
         user = self.context.get("view").request.user
-
         if user.is_anonymous:
             return False
-
         return user.in_carts.filter(recipe=recipe).exists()
 
     def validate(self, data):
