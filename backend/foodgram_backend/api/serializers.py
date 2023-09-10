@@ -1,16 +1,10 @@
 from rest_framework.serializers import (ModelSerializer,
                                         SerializerMethodField,
                                         EmailField,
-                                        CharField,
-                                        ReadOnlyField)
+                                        CharField,)
 from django.contrib.auth import get_user_model
 from recipes.models import Recipe, Tag, Ingredient, CountIngredient
-from users.models import Subscribe
 from drf_extra_fields.fields import Base64ImageField
-from rest_framework.response import Response
-from rest_framework.status import (HTTP_400_BAD_REQUEST,
-                                   HTTP_204_NO_CONTENT,
-                                   HTTP_201_CREATED)
 from django.core.exceptions import ValidationError
 from api.core import Defs
 
@@ -82,10 +76,10 @@ class IngredientAmountSerializer(ModelSerializer):
 
     def get_name(self, obj):
         return obj.ingredient.name
-    
+
     def get_measurement_unit(self, obj):
         return obj.ingredient.measurement_unit
-    
+
     def get_id(self, obj):
         return obj.ingredient.id
 
@@ -117,16 +111,16 @@ class RecipeSerializer(ModelSerializer):
 
     def get_ingredients(self, obj):
         ingredients = CountIngredient.objects.filter(recipe=obj)
-        serialized_ingredients = IngredientAmountSerializer(ingredients,
-                                                      many=True).data
+        serialized_ingredients = IngredientAmountSerializer(
+            ingredients, many=True).data
         return serialized_ingredients
-    
+
     def get_is_favorited(self, obj):
         user = self.context['request'].user
         if user.is_authenticated:
             return obj.is_favorited.filter(user=user).exists()
         return False
- 
+
     def get_is_in_shopping_cart(self, recipe):
         user = self.context.get("view").request.user
 
@@ -141,8 +135,8 @@ class RecipeSerializer(ModelSerializer):
 
         if len(data_ingredients) == 0 or len(id_tags) == 0:
             raise ValidationError('Заполните все поля и картинку не забудьте!')
-        
-        #Нахождение ингредиентов готовых
+
+        # Нахождение ингредиентов готовых
         ingredients_obj = []
 
         list_id = Defs.id_and_amount_pull_out_from_dict(data_ingredients)
@@ -152,9 +146,10 @@ class RecipeSerializer(ModelSerializer):
                 obj = Ingredient.objects.get(id=id_)
                 ingredients_obj.append((obj, amount))
             except Ingredient.DoesNotExist:
-                raise ValueError("""Список ингредиентов уже готов выберите 
+                raise ValueError("""Список ингредиентов уже готов выберите
                                  из нее и нажмите добавить ингредиент""")
-        #Нахождение тэгов
+
+        # Нахождение тэгов
         tags_obj = []
         for id_tag in id_tags:
             try:
@@ -186,27 +181,48 @@ class RecipeSerializer(ModelSerializer):
         new_recipe.tags.set(tags)
         return new_recipe
 
-    def update(self, recipe, validated_data):
-        tags = validated_data.pop('tags')
-        ingredients = validated_data.pop('ingredients')
+    def update(self, instance, validated_data):
 
-        recipe.name = validated_data.get('name')
-        recipe.image = validated_data.get('image')
-        recipe.text = validated_data.get('text')
-        recipe.cooking_time = validated_data.get('cooking_time')
+        old_data = {
+            'name': instance.name,
+            'text': instance.text,
+            'image': instance.image,
+            'cooking_time': instance.cooking_time,
 
-        if tags:
-            recipe.tags.set(tags)
+        }
 
-        if ingredients:
-            for ingredient, amount in ingredients:
-                CountIngredient.objects.create(
-                    recipe=recipe,
-                    ingredient=ingredient,
-                    amount=amount
-                )
+        instance.name = validated_data.get('name', instance.name)
+        instance.text = validated_data.get('text', instance.text)
+        instance.image = validated_data.get('image', instance.image)
+        instance.cooking_time = validated_data.get('cooking_time',
+                                                   instance.cooking_time)
 
-        return recipe
+        instance.save()
+
+        ingredients_data = validated_data.get('ingredients')
+        if ingredients_data is not None:
+            instance.ingredients.clear()
+            for ingredient_data in ingredients_data:
+                ingredient, amount = ingredient_data
+                CountIngredient.objects.create(recipe=instance,
+                                               ingredient=ingredient,
+                                               amount=amount)
+
+        tags_data = validated_data.get('tags')
+        if tags_data is not None:
+            instance.tags.set(tags_data)
+
+        fields_changed = False
+        for field, old_value in old_data.items():
+            new_value = getattr(instance, field)
+            if new_value != old_value:
+                fields_changed = True
+                break
+
+        if fields_changed:
+            pass
+
+        return instance
 
 
 class ShortRecipeSerializer(ModelSerializer):

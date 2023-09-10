@@ -1,6 +1,5 @@
 from django.shortcuts import get_object_or_404
 from api.permissions import OwnerUserOrReadOnly
-
 from djoser.views import UserViewSet as DjUserViewSet
 from rest_framework.response import Response
 from rest_framework.viewsets import ModelViewSet, ReadOnlyModelViewSet
@@ -53,11 +52,11 @@ class CustomUserViewSet(DjUserViewSet):
         existing_subscription = Subscribe.objects.filter(user=request.user,
                                                          author=author).first()
         if existing_subscription:
-            return Response({'detail':
+            return Response({'error':
                              'Вы уже подписаны на этого автора'},
                             status=HTTP_400_BAD_REQUEST)
         if request.user.username == author.username:
-            return Response({'detail':
+            return Response({'error':
                              'Вы не можете подписаться на самого себя'},
                             status=HTTP_400_BAD_REQUEST)
         # Создайте новую подписку
@@ -77,7 +76,7 @@ class CustomUserViewSet(DjUserViewSet):
             subscription = Subscribe.objects.get(user=request.user,
                                                  author=author)
         except Subscribe.DoesNotExist:
-            return Response({'errors': 'Вы уже отписались!'},
+            return Response({'error': 'Вы уже отписались!'},
                             status=HTTP_400_BAD_REQUEST)
 
         subscription.delete()
@@ -132,7 +131,7 @@ class RecipeViewSet(ModelViewSet):
 
         if is_favorited == '1':
             queryset = queryset.filter(is_favorited__user=user)
-        
+
         if tags:
             queryset = queryset.filter(tags__slug__in=tags)
         return queryset
@@ -141,7 +140,7 @@ class RecipeViewSet(ModelViewSet):
     def favorite(self, request, pk):
         '''
         Аналогичная функция, что и с User.
-        Данная функцию является маршрутом 
+        Данная функцию является маршрутом
         либо для POST, либо для DELETE.
 
         '''
@@ -193,13 +192,13 @@ class RecipeViewSet(ModelViewSet):
             return Response({'errors':
                              'Вы уже добавили этот рецепт в список покупок'},
                             status=HTTP_400_BAD_REQUEST)
-        
+
         link_cart = Cart.objects.create(user=request.user,
                                         recipe=recipe)
         link_cart.save()
         serializer = self.add_serializer(recipe)
         return Response(serializer.data, status=HTTP_201_CREATED)
-    
+
     @shopping_cart.mapping.delete
     def delete_shopping_cart(self, request, pk):
         recipe = get_object_or_404(Recipe, pk=pk)
@@ -215,21 +214,26 @@ class RecipeViewSet(ModelViewSet):
 
     @action(detail=False, methods=("get",))
     def download_shopping_cart(self, request):
+        user = self.request.user
         recipes = Recipe.objects.filter(in_carts__user=request.user)
-        ingredients_list = {} 
+        ingredients_list = {}
         for recipe in recipes:
             ingredients = recipe.ingredients.all()
+
             for ingredient in ingredients:
-                amount = CountIngredient.objects.get(recipe=recipe,
-                                                     ingredient=ingredient).amount
+                amount = CountIngredient.objects.get(
+                    recipe=recipe,
+                    ingredient=ingredient).amount
+
                 if ingredients_list.get(str(ingredient), False):
                     ingredients_list[str(ingredient)] += amount
                 else:
                     ingredients_list[str(ingredient)] = amount
-        response = HttpResponse(
-            "\n".join(map(lambda ing: f"{str(ing[0])} - {ing[1]} ",
-                          ingredients_list.items())),
-                          content_type="text/plain"
-        )
-        response["Content-Disposition"] = 'attachment; filename="shopping_cart.txt"'
+        response = HttpResponse("\n".join(map(
+            lambda ing: f"{str(ing[0])} - {ing[1]} ", ingredients_list.items()
+        )),
+                                content_type="text/plain",)
+        response["Content-Disposition"] = (
+            f'attachment; filename="{str(user)}_shopping_cart.txt"'
+            )
         return response

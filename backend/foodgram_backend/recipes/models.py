@@ -1,7 +1,6 @@
 from django.db import models
 from django.core.validators import MinValueValidator, MaxValueValidator
 from django.contrib.auth import get_user_model
-from api.constants import Const
 from PIL import Image
 
 User = get_user_model()
@@ -116,11 +115,11 @@ class Recipe(models.Model):
 
     def __str__(self):
         return self.name
-    
+
     def save(self, *args, **kwargs) -> None:
         super().save(*args, **kwargs)
         image = Image.open(self.image.path)
-        image.thumbnail(Const.RECIPE_IMAGE_SIZE)
+        image.thumbnail(1000, 1000)
         image.save(self.image.path)
 
 
@@ -137,18 +136,7 @@ class CountIngredient(models.Model):
     )
     amount = models.PositiveSmallIntegerField(
         verbose_name="Количество",
-        default=0,
-        validators=(
-            MinValueValidator(
-                1,
-                "Нужно хоть какое-то количество.",
-            ),
-            MaxValueValidator(
-                300,
-                "Слишком много!",
-            ),
-        ),
-    )
+        default=0,)
 
     class Meta:
         verbose_name = "Ингридиент"
