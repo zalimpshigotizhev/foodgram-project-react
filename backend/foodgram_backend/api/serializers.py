@@ -172,8 +172,7 @@ class RecipeSerializer(ModelSerializer):
             CountIngredient.objects.create(
                 recipe=new_recipe,
                 ingredient=ingredient,
-                amount=amount
-                )
+                amount=amount)
         new_recipe.tags.set(tags)
         return new_recipe
 

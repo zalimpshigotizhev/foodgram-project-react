@@ -231,9 +231,7 @@ class RecipeViewSet(ModelViewSet):
                     ingredients_list[str(ingredient)] = amount
         response = HttpResponse("\n".join(map(
             lambda ing: f"{str(ing[0])} - {ing[1]} ", ingredients_list.items()
-        )),
-                                content_type="text/plain",)
+        )), content_type="text/plain",)
         response["Content-Disposition"] = (
-            f'attachment; filename="{str(user)}_shopping_cart.txt"'
-            )
+            f'attachment; filename="{str(user)}_shopping_cart.txt"')
         return response
