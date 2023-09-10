@@ -1,5 +1,6 @@
 from django.shortcuts import get_object_or_404
 from api.permissions import OwnerUserOrReadOnly
+
 from djoser.views import UserViewSet as DjUserViewSet
 from rest_framework.response import Response
 from rest_framework.viewsets import ModelViewSet, ReadOnlyModelViewSet
@@ -15,7 +16,7 @@ from recipes.models import (Favorite,
                             Recipe,
                             Cart)
 from users.models import CustomUser, Subscribe
-from api.paginators import CustomPagination, NoPagination
+from api.paginators import CustomPagination
 from rest_framework.decorators import action
 from django.contrib.auth import get_user_model
 from rest_framework.status import (HTTP_400_BAD_REQUEST,
@@ -23,7 +24,6 @@ from rest_framework.status import (HTTP_400_BAD_REQUEST,
                                    HTTP_201_CREATED)
 from api import permissions
 from django.http import HttpResponse
-from django.utils import translation
 from django.db.models import Q
 
 
@@ -192,7 +192,7 @@ class RecipeViewSet(ModelViewSet):
         if existing_cart:
             return Response({'errors':
                              'Вы уже добавили этот рецепт в список покупок'},
-                             status=HTTP_400_BAD_REQUEST)
+                            status=HTTP_400_BAD_REQUEST)
         
         link_cart = Cart.objects.create(user=request.user,
                                         recipe=recipe)
@@ -215,16 +215,21 @@ class RecipeViewSet(ModelViewSet):
 
     @action(detail=False, methods=("get",))
     def download_shopping_cart(self, request):
-        recipes = Recipe.objects.filter(in_carts__user=request.user) # Рецепты Юзера
-        ingredients_list = {} #Словарь в который нужно будет добавить
+        recipes = Recipe.objects.filter(in_carts__user=request.user)
+        ingredients_list = {} 
         for recipe in recipes:
             ingredients = recipe.ingredients.all()
             for ingredient in ingredients:
-                amount = CountIngredient.objects.get(recipe=recipe, ingredient=ingredient).amount
+                amount = CountIngredient.objects.get(recipe=recipe,
+                                                     ingredient=ingredient).amount
                 if ingredients_list.get(str(ingredient), False):
                     ingredients_list[str(ingredient)] += amount
                 else:
                     ingredients_list[str(ingredient)] = amount
-        response = HttpResponse("\n".join(map(lambda ing: f"{str(ing[0])} - {ing[1]} ", ingredients_list.items())), content_type="text/plain")
+        response = HttpResponse(
+            "\n".join(map(lambda ing: f"{str(ing[0])} - {ing[1]} ",
+                          ingredients_list.items())),
+                          content_type="text/plain"
+        )
         response["Content-Disposition"] = 'attachment; filename="shopping_cart.txt"'
         return response

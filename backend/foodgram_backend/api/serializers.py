@@ -11,6 +11,9 @@ from rest_framework.response import Response
 from rest_framework.status import (HTTP_400_BAD_REQUEST,
                                    HTTP_204_NO_CONTENT,
                                    HTTP_201_CREATED)
+from django.core.exceptions import ValidationError
+from api.core import Defs
+
 
 User = get_user_model()
 
@@ -131,37 +134,86 @@ class RecipeSerializer(ModelSerializer):
             return False
 
         return user.in_carts.filter(recipe=recipe).exists()
-    
-    # def create(self, validated_data:dict):
-    #     # data_ingredients = validated_data['ingredients']
-    #     # data_tags = validated_data['tags']
-    #     # for data_ingredient in data_ingredients:
-            
-    #     #     measurement_unit = ingredient['measurement_unit']
-    #     #     new_ingredient = Ingredient.objects.create(name=name,
-    #     #                                                measurement_unit=measurement_unit)
-    #     #     new_ingredient.save()
-    #     user = self.context['request'].user
-    #     # ingredients = validated_data['ingredients']
-    #     # tags = validated_data['tags']
-    #     recipe = Recipe.objects.create(author=user, **validated_data)
-    #     # recipe.tags.set(tags)
-    #     return recipe
-    def create(self, validated_data):
-        user = User(
-            email=validated_data["email"],
-            username=validated_data["username"],
-            first_name=validated_data["first_name"],
-            last_name=validated_data["last_name"],
+
+    def validate(self, data):
+        data_ingredients = self.initial_data.get('ingredients')
+        id_tags = self.initial_data.get('tags')
+
+        if len(data_ingredients) == 0 or len(id_tags) == 0:
+            raise ValidationError('Заполните все поля и картинку не забудьте!')
+        
+        #Нахождение ингредиентов готовых
+        ingredients_obj = []
+
+        list_id = Defs.id_and_amount_pull_out_from_dict(data_ingredients)
+
+        for id_, amount in list_id:
+            try:
+                obj = Ingredient.objects.get(id=id_)
+                ingredients_obj.append((obj, amount))
+            except Ingredient.DoesNotExist:
+                raise ValueError("""Список ингредиентов уже готов выберите 
+                                 из нее и нажмите добавить ингредиент""")
+        #Нахождение тэгов
+        tags_obj = []
+        for id_tag in id_tags:
+            try:
+                obj = Tag.objects.get(id=id_tag)
+                tags_obj.append(obj)
+            except Tag.DoesNotExist:
+                raise ValueError("Такого тэга нет")
+
+        data.update(
+            {
+                'ingredients': ingredients_obj,
+                'tags': tags_obj,
+            }
         )
-        user.set_password(validated_data["password"])
-        user.save()
-        return user
+        return data
+
+    def create(self, validated_data):
+        user = self.context['request'].user
+        tags = validated_data.pop('tags')
+        ingredients = validated_data.pop('ingredients')
+
+        new_recipe = Recipe.objects.create(author=user, **validated_data)
+        for ingredient, amount in ingredients:
+            CountIngredient.objects.create(
+                recipe=new_recipe,
+                ingredient=ingredient,
+                amount=amount
+                )
+        new_recipe.tags.set(tags)
+        return new_recipe
+
+    def update(self, recipe, validated_data):
+        tags = validated_data.pop('tags')
+        ingredients = validated_data.pop('ingredients')
+
+        recipe.name = validated_data.get('name')
+        recipe.image = validated_data.get('image')
+        recipe.text = validated_data.get('text')
+        recipe.cooking_time = validated_data.get('cooking_time')
+
+        if tags:
+            recipe.tags.set(tags)
+
+        if ingredients:
+            for ingredient, amount in ingredients:
+                CountIngredient.objects.create(
+                    recipe=recipe,
+                    ingredient=ingredient,
+                    amount=amount
+                )
+
+        return recipe
 
 
 class ShortRecipeSerializer(ModelSerializer):
-    """Сериализатор для модели Recipe.
-    Определён укороченный набор полей для некоторых эндпоинтов.
+    """
+    Сериализатор для модели Recipe.
+    Короткий вид рецептов для подписок на юзера.
+
     """
 
     class Meta:
