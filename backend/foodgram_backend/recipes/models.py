@@ -1,6 +1,7 @@
 from django.db import models
 from django.core.validators import MinValueValidator, MaxValueValidator
 from django.contrib.auth import get_user_model
+from django.core.exceptions import ValidationError
 from PIL import Image
 
 User = get_user_model()
@@ -16,6 +17,7 @@ class Tag(models.Model):
     color = models.CharField(
         ('цвет'),
         max_length=64,
+        unique=True,
 
     )
     slug = models.CharField(
@@ -28,6 +30,11 @@ class Tag(models.Model):
     class Meta:
         verbose_name = 'Тэг'
         verbose_name_plural = 'Тэги'
+
+    def clean(self) -> None:
+        if len(self.color) != 6:
+            raise ValidationError("Для цвета нужно 6 символов")
+        self.color = '#' + self.color.upper()
 
     def __str__(self):
         return self.name

@@ -1,7 +1,7 @@
 
 from pathlib import Path
-# from decouple import Csv, config
-# import os
+from decouple import Csv, config
+import os
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -19,9 +19,9 @@ DEBUG = True
 # ALLOWED_HOSTS = ['backend', 'localhost']
 ALLOWED_HOSTS = []
 
-# CSRF_TRUSTED_ORIGINS = config("CSRF_TRUSTED_ORIGINS",
-#                               default="http://localhost, http://127.0.0.1",
-#                               cast=Csv())
+CSRF_TRUSTED_ORIGINS = config("CSRF_TRUSTED_ORIGINS",
+                              default="http://localhost, http://127.0.0.1",
+                              cast=Csv())
 
 
 INSTALLED_APPS = [
