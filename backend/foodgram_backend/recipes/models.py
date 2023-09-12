@@ -5,10 +5,10 @@ from django.core.exceptions import ValidationError
 
 from PIL import Image
 
-from backend.foodgram_backend.api.core import (DEFAULT_INGR,
-                                               MAX_SIZE_IMAGE,
-                                               MAX_TIME_COOK,
-                                               MIN_TIME_COOK)
+from api.core import (DEFAULT_INGR,
+                      MAX_SIZE_IMAGE,
+                      MAX_TIME_COOK,
+                      MIN_TIME_COOK)
 
 User = get_user_model()
 
