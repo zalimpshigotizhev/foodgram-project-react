@@ -5,7 +5,6 @@ volumes:
   media_dir:
 
 services:
-
   backend:
     image: zalimoka/foodgram_backend
     env_file: .env
