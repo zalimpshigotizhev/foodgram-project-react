@@ -137,7 +137,7 @@ class RecipeSerializer(ModelSerializer):
                                                           data_ingredients)
 
         # Нахождение тэгов
-        
+
         try:
             tags_obj = Tag.objects.filter(id__in=id_tags)
         except Tag.DoesNotExist:
@@ -167,14 +167,6 @@ class RecipeSerializer(ModelSerializer):
         return new_recipe
 
     def update(self, instance, validated_data):
-
-        old_data = {
-            'name': instance.name,
-            'text': instance.text,
-            'image': instance.image,
-            'cooking_time': instance.cooking_time,
-
-        }
 
         instance.name = validated_data.get('name', instance.name)
         instance.text = validated_data.get('text', instance.text)
