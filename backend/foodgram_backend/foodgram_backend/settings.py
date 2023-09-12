@@ -17,10 +17,10 @@ SECRET_KEY = 'django-insecure-g_+6scupq*(p9%vp0)+x!knor+sv1*k4ymn)z$27^@v4s2bk-j
 DEBUG = True
 
 # ALLOWED_HOSTS = ['backend', 'localhost']
-ALLOWED_HOSTS = ['backend', 'localhost', 'foodgramzalim.ddns.net', '158.160.73.226']
+ALLOWED_HOSTS = ['backend', '127.0.0.1', 'localhost', 'foodgramzalim.ddns.net', '158.160.73.226']
 # ALLOWED_HOSTS = []
 
-CSRF_TRUSTED_ORIGINS = ['http://foodgramzalim.ddns.net/signin']
+CSRF_TRUSTED_ORIGINS = ['https://foodgramzalim.ddns.net']
 
 INSTALLED_APPS = [
     'django.contrib.admin',

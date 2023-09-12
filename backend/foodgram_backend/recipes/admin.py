@@ -1,4 +1,5 @@
 from django.contrib import admin
+
 from .models import (
     Recipe,
     Tag,
@@ -9,31 +10,35 @@ from .models import (
 )
 
 
+class RecipeIngredientInline(admin.TabularInline):
+    model = Ingredient
+
+
 @admin.register(Recipe)
 class RecipeAdmin(admin.ModelAdmin):
-    ...
+    inlines = [RecipeIngredientInline]
 
 
 @admin.register(Tag)
 class TagAdmin(admin.ModelAdmin):
-    ...
+    pass
 
 
 @admin.register(Ingredient)
 class IngredientAdmin(admin.ModelAdmin):
-    ...
+    pass
 
 
 @admin.register(Favorite)
 class FavoriteAdmin(admin.ModelAdmin):
-    ...
+    pass
 
 
 @admin.register(Cart)
 class CartAdmin(admin.ModelAdmin):
-    ...
+    pass
 
 
 @admin.register(CountIngredient)
 class CountIngredientAdmin(admin.ModelAdmin):
-    ...
+    pass

@@ -3,7 +3,7 @@ from django.contrib.auth.models import AbstractUser
 
 
 class CustomUser(AbstractUser):
-    '''  Кастомный юзер  '''
+    """Кастомный юзер"""
     email = models.EmailField(
         verbose_name="Электронная почта",
         unique=True,
@@ -35,9 +35,11 @@ class CustomUser(AbstractUser):
     class Meta:
         verbose_name = "Пользователь"
         verbose_name_plural = "Пользователи"
+        ordering = ['last_name', 'first_name']
 
 
 class Subscribe(models.Model):
+    """ Подписки на пользователей """
     user = models.ForeignKey(
         CustomUser,
         on_delete=models.CASCADE,
@@ -54,6 +56,7 @@ class Subscribe(models.Model):
         unique_together = ('user', 'author')
         verbose_name = "Подписка"
         verbose_name_plural = "Подписки"
+        ordering = ['created_at']
 
     def __str__(self):
         return f"{self.user.username} -> {self.author.username}"

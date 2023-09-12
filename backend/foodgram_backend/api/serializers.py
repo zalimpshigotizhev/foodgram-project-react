@@ -1,12 +1,13 @@
+from django.contrib.auth import get_user_model
+from drf_extra_fields.fields import Base64ImageField
+from django.core.exceptions import ValidationError
 from rest_framework.serializers import (ModelSerializer,
                                         SerializerMethodField,
                                         EmailField,
                                         CharField,)
-from django.contrib.auth import get_user_model
+
+from api.core import id_and_amount_pull_out_from_dict
 from recipes.models import Recipe, Tag, Ingredient, CountIngredient
-from drf_extra_fields.fields import Base64ImageField
-from django.core.exceptions import ValidationError
-from api.core import Defs
 
 
 User = get_user_model()
@@ -29,7 +30,7 @@ class CustomUserSerializer(ModelSerializer):
             "password",
             "is_subscribed"
         )
-        read_only_fields = ("__all__",)
+        read_only_fields = "__all__"
         extra_kwargs = {"password": {"write_only": True}}
 
     def get_is_subscribed(self, obj):
@@ -53,14 +54,14 @@ class CustomUserSerializer(ModelSerializer):
 class TagSerializer(ModelSerializer):
     class Meta:
         model = Tag
-        fields = '__all__'
+        fields = "__all__"
         read_only_fields = ("__all__",)
 
 
 class IngredientSerializer(ModelSerializer):
     class Meta:
         model = Ingredient
-        fields = '__all__'
+        fields = "__all__"
         read_only_fields = ("__all__",)
 
 
@@ -72,7 +73,7 @@ class IngredientAmountSerializer(ModelSerializer):
     class Meta:
         model = CountIngredient
         fields = ('id', 'amount', 'name', 'measurement_unit')
-        read_only_fields = ("__all__",)
+        read_only_fields = "__all__"
 
     def get_name(self, obj):
         return obj.ingredient.name
@@ -129,21 +130,21 @@ class RecipeSerializer(ModelSerializer):
         data_ingredients = self.initial_data.get('ingredients')
         id_tags = self.initial_data.get('tags')
 
-        if len(data_ingredients) == 0 or len(id_tags) == 0:
+        if not data_ingredients or not id_tags:
             raise ValidationError('Заполните все поля и картинку не забудьте!')
 
         # Нахождение ингредиентов готовых
         ingredients_obj = []
 
-        list_id = Defs.id_and_amount_pull_out_from_dict(data_ingredients)
+        list_id = id_and_amount_pull_out_from_dict(data_ingredients)
 
         for id_, amount in list_id:
             try:
                 obj = Ingredient.objects.get(id=id_)
                 ingredients_obj.append((obj, amount))
-            except Ingredient.DoesNotExist:
-                raise ValueError("""Список ингредиентов уже готов выберите
-                                 из нее и нажмите добавить ингредиент""")
+            # except Ingredient.DoesNotExist:
+            #     raise ValueError("""Список ингредиентов уже готов выберите
+            #                      из нее и нажмите добавить ингредиент""")
 
         # Нахождение тэгов
         tags_obj = []
@@ -214,8 +215,8 @@ class RecipeSerializer(ModelSerializer):
                 fields_changed = True
                 break
 
-        if fields_changed:
-            pass
+                if fields_changed:
+                    pass
 
         return instance
 
@@ -230,7 +231,7 @@ class ShortRecipeSerializer(ModelSerializer):
     class Meta:
         model = Recipe
         fields = "id", "name", "image", "cooking_time"
-        read_only_fields = ("__all__",)
+        read_only_fields = "__all__"
 
 
 class UserSubscribeSerializer(CustomUserSerializer):
@@ -251,7 +252,7 @@ class UserSubscribeSerializer(CustomUserSerializer):
             "recipes",
             "recipes_count",
         )
-        read_only_fields = ("__all__",)
+        read_only_fields = "__all__"
 
     def get_is_subscribed(*args):
         return True

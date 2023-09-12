@@ -2,13 +2,20 @@ from django.db import models
 from django.core.validators import MinValueValidator, MaxValueValidator
 from django.contrib.auth import get_user_model
 from django.core.exceptions import ValidationError
+
 from PIL import Image
+
+from backend.foodgram_backend.api.core import (DEFAULT_INGR,
+                                               MAX_SIZE_IMAGE,
+                                               MAX_TIME_COOK,
+                                               MIN_TIME_COOK)
 
 User = get_user_model()
 
 
 class Tag(models.Model):
-    ''' Тэги '''
+    """ Тэги """
+
     name = models.CharField(
         ('название тэга'),
         max_length=64,
@@ -30,6 +37,7 @@ class Tag(models.Model):
     class Meta:
         verbose_name = 'Тэг'
         verbose_name_plural = 'Тэги'
+        ordering = ['name']
 
     def clean(self) -> None:
         if len(self.color) != 6:
@@ -41,75 +49,76 @@ class Tag(models.Model):
 
 
 class Ingredient(models.Model):
+    """ Ингредиент """
+
     name = models.CharField(
         ('наименование'),
         max_length=64,
-        unique=True,
+        unique=True,)
 
-    )
     measurement_unit = models.CharField(
         ('единица измерения'),
-        max_length=64,
-
-    )
+        max_length=64,)
 
     class Meta:
         verbose_name = 'Ингредиент'
         verbose_name_plural = 'Ингредиенты'
+        ordering = ['name']
 
     def __str__(self):
         return self.name
 
 
 class Recipe(models.Model):
-    ''' Рецепты '''
+    """ Рецепты """
+
     name = models.CharField(
-        verbose_name=("Название рецепта"),
-        max_length=56
-    )
+        verbose_name=('Название рецепта'),
+        max_length=56)
+
     author = models.ForeignKey(
         User,
-        verbose_name=("Автор"),
+        verbose_name=('Автор'),
         related_name='recipes',
         on_delete=models.SET_NULL,
-        null=True,
-    )
+        null=True)
+
     tags = models.ManyToManyField(
         Tag,
-        verbose_name=("Тэги"),
+        verbose_name=('Тэги'),
         related_name='recipes',
-        blank=False,
-    )
+        blank=False,)
+
     ingredients = models.ManyToManyField(
         Ingredient,
-        verbose_name=("Ингредиенты"),
+        verbose_name=('Ингредиенты'),
         blank=False,
         related_name='recipes',
-        through='CountIngredient',
-    )
+        through='CountIngredient',)
+
     pub_date = models.DateTimeField(
-        verbose_name=("Дата и время публикации"),
+        verbose_name=('Дата и время публикации'),
         auto_now_add=True,
-        editable=False
-    )
+        editable=False)
+
     image = models.ImageField(
-        verbose_name=("Картинка"),
-        upload_to='recipe_img/',
-    )
+        verbose_name=('Картинка'),
+        upload_to='recipe_img/',)
+
     text = models.TextField(
-        verbose_name=("Текст"),
-        max_length=1024
-    )
-    cooking_time = models.PositiveIntegerField(
-        verbose_name=("Время приготовления"),
-        default=0,
+        verbose_name=('Текст'),
+        max_length=1024)
+
+    cooking_time = models.PositiveSmallIntegerField(
+        verbose_name=('Время приготовления'),
+        default=DEFAULT_INGR,
         validators=(
             MinValueValidator(
-                1,
+                MIN_TIME_COOK,
                 'Нужно указать время приготовления'
             ),
             MaxValueValidator(
-                300,
+                MAX_TIME_COOK,
                 'Слишком долго готовить!'
             )
         )
@@ -118,7 +127,7 @@ class Recipe(models.Model):
     class Meta:
         verbose_name = 'Рецепт'
         verbose_name_plural = 'Рецепты'
-        ordering = ("-pub_date",)
+        ordering = ["-pub_date"]
 
     def __str__(self):
         return self.name
@@ -126,28 +135,38 @@ class Recipe(models.Model):
     def save(self, *args, **kwargs) -> None:
         super().save(*args, **kwargs)
         image = Image.open(self.image.path)
-        image.thumbnail(1000, 1000)
+        image.thumbnail(MAX_SIZE_IMAGE)
         image.save(self.image.path)
 
 
 class CountIngredient(models.Model):
-    """Количество ингридиентов в блюде. """
+    """ Количество ингридиентов в блюде """
 
     recipe = models.ForeignKey(
         Recipe,
-        on_delete=models.CASCADE,
-    )
+        on_delete=models.CASCADE)
+
     ingredient = models.ForeignKey(
         Ingredient,
-        on_delete=models.CASCADE,
-    )
+        on_delete=models.CASCADE)
+
     amount = models.PositiveSmallIntegerField(
-        verbose_name="Количество",
-        default=0,)
+        verbose_name=('Количество'),
+        default=1,
+        validators=(
+            MinValueValidator(
+                1,
+                'Нужен хоть грамм/мл!'
+            ),
+            MaxValueValidator(
+                32000,
+                'Слишком много!')
+        )
+    )
 
     class Meta:
-        verbose_name = "Ингридиент"
-        verbose_name_plural = "Количество ингридиентов"
+        verbose_name = 'Ингридиент'
+        verbose_name_plural = 'Количество ингридиентов'
         ordering = ("recipe",)
 
     def __str__(self) -> str:
@@ -155,52 +174,57 @@ class CountIngredient(models.Model):
 
 
 class Favorite(models.Model):
+    """ Избранные рецепты """
+
     user = models.ForeignKey(
         User,
-        related_name="in_favorites",
-        verbose_name="пользователь",
+        related_name='in_favorites',
+        verbose_name=('пользователь'),
         on_delete=models.CASCADE
     )
     recipe = models.ForeignKey(
         Recipe,
-        related_name="is_favorited",
-        verbose_name="рецепт",
+        related_name='is_favorited',
+        verbose_name=('рецепт'),
         on_delete=models.CASCADE
     )
     date_added = models.DateTimeField(
-        verbose_name="Дата и время add",
+        verbose_name='Дата и время add',
         auto_now_add=True
     )
 
     class Meta:
-        verbose_name = "Избранный рецепт"
-        verbose_name_plural = "Избранные рецепты"
+        verbose_name = 'Избранный рецепт'
+        verbose_name_plural = 'Избранные рецепты'
 
     def __str__(self) -> str:
         return f'{self.user} добавил в фавориты рецепт {self.recipe}'
 
 
 class Cart(models.Model):
+    """ Список покупок """
+
     recipe = models.ForeignKey(
         Recipe,
-        verbose_name="Рецепты списка покупок",
+        verbose_name='Рецепты списка покупок',
         related_name='in_carts',
         on_delete=models.CASCADE
     )
     user = models.ForeignKey(
         User,
-        verbose_name="Автор списка покупок",
+        verbose_name='Автор списка покупок',
         related_name='in_carts',
         on_delete=models.CASCADE
     )
     date_add = models.DateTimeField(
-        verbose_name="Дата и время добавления",
+        verbose_name='Дата и время добавления',
         auto_now=True,
     )
 
     class Meta:
-        verbose_name = "Список покупок"
-        verbose_name_plural = "Списки покупок"
+        verbose_name = 'Список покупок'
+        verbose_name_plural = 'Списки покупок'
+        ordering = ["recipe"]
 
     def __str__(self):
         return f'{self.user} добавил в список покупок {self.recipe}'

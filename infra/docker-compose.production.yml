@@ -1,7 +1,7 @@
 version: '3.3'
 volumes:
   pg_data:
-  static_dir:
+  static_dir: 
   media_dir:
 
 services:
