@@ -52,16 +52,16 @@ class CustomUserViewSet(DjUserViewSet):
     def create_subscribe(self, request, id):
         author = get_object_or_404(CustomUser, id=id)
 
-        # existing_subscription = Subscribe.objects.filter(user=request.user,
-        #                                                  author=author).first()
-        # if existing_subscription:
-        #     return Response({"error":
-        #                      "Вы уже подписаны на этого автора"},
-        #                     status=HTTP_400_BAD_REQUEST)
-        # if request.user.username == author.username:
-        #     return Response({"error":
-        #                      "Вы не можете подписаться на самого себя"},
-        #                     status=HTTP_400_BAD_REQUEST)
+        existing_subscription = Subscribe.objects.filter(user=request.user,
+                                                         author=author).first()
+        if existing_subscription:
+            return Response({"error":
+                             "Вы уже подписаны на этого автора"},
+                            status=HTTP_400_BAD_REQUEST)
+        if request.user.username == author.username:
+            return Response({"error":
+                             "Вы не можете подписаться на самого себя"},
+                            status=HTTP_400_BAD_REQUEST)
         # Создайте новую подписку
         Subscribe.objects.create(user=request.user, author=author)
         serializer = self.add_serializer(author)

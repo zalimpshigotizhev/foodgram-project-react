@@ -8,7 +8,6 @@ from rest_framework.serializers import (ModelSerializer,
 
 from api.core import id_and_amount_pull_out_from_dict
 from recipes.models import Recipe, Tag, Ingredient, CountIngredient
-from users.models import Subscribe
 
 
 User = get_user_model()
@@ -168,7 +167,6 @@ class RecipeSerializer(ModelSerializer):
         return new_recipe
 
     def update(self, instance, validated_data):
-
         instance.name = validated_data.get('name', instance.name)
         instance.text = validated_data.get('text', instance.text)
         instance.image = validated_data.get('image', instance.image)
@@ -232,17 +230,3 @@ class UserSubscribeSerializer(CustomUserSerializer):
 
     def get_recipes_count(self, obj):
         return obj.recipes.count()
-
-    def validate(self, data):
-        user = self.context['request'].user
-        author = data['author']
-
-        if user == author:
-            raise ValidationError("Вы не можете подписаться на самого себя")
-
-        existing_subscription = Subscribe.objects.filter(user=user,
-                                                         author=author).first()
-        if existing_subscription:
-            raise ValidationError("Вы уже подписаны на этого автора")
-
-        return data
