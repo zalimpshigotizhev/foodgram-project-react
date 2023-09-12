@@ -19,8 +19,7 @@ services:
       - media_dir:/app/media/
     depends_on:
       - db
-    ports:
-      - "8000:8000"
+
   frontend:
     image: zalimoka/foodgram_backend
     env_file: .env
