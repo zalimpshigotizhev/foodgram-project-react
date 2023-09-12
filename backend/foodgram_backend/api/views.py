@@ -1,8 +1,8 @@
 from django.shortcuts import get_object_or_404
 from django.http import HttpResponse
 from django.db.models import Q
-from backend.foodgram_backend.api.permissions import (AdminOrReadOnly,
-                                                      AuthorStaffOrReadOnly)
+from api.permissions import (AdminOrReadOnly,
+                             AuthorStaffOrReadOnly)
 from rest_framework.response import Response
 from rest_framework.viewsets import ModelViewSet, ReadOnlyModelViewSet
 from rest_framework.decorators import action
