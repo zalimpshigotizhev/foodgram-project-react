@@ -6,7 +6,7 @@ volumes:
   
 services:
   db:
-    image: foodgram-db-1
+    image: postrgres
     env_file: .env
     volumes:
       - pg_data:/var/lib/postgresql/data/
