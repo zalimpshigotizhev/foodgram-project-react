@@ -11,7 +11,7 @@ from .models import (
 
 
 class RecipeIngredientInline(admin.TabularInline):
-    model = Ingredient
+    model = CountIngredient
 
 
 @admin.register(Recipe)
