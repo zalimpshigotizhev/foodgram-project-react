@@ -231,3 +231,6 @@ class UserSubscribeSerializer(CustomUserSerializer):
 
     def get_recipes_count(self, obj):
         return obj.recipes.count()
+    
+    def validate(self, data):
+        ...
