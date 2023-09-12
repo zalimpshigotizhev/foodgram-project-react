@@ -1,16 +1,20 @@
 
-def id_and_amount_pull_out_from_dict(self, list_dicts_):
+
+def id_and_amount_pull_out_from_dict(classes, data_ingr):
     ''' Вытаскивает id и amount из
         request.context['ingredients'] в виде кортежа'''
-    lst_id = []
+    id_list = []
+    amounts = []
 
-    for dict_ in list_dicts_:
-        ids = dict_['id']
-        amount = dict_['amount']
-        tuple_ = (ids, amount)
-        lst_id.append(tuple_)
+    for ingredient in data_ingr:
+        for name, value in ingredient.items():
+            if name == 'id':
+                id_list.append(value)
+            elif name == 'amount':
+                amounts.append(value)
 
-    return lst_id
+    ingredients = classes.objects.filter(id__in=id_list)
+    return list(zip(ingredients, amounts))
 
 
 MIN_TIME_COOK = 1

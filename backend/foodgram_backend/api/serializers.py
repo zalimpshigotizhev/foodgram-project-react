@@ -6,7 +6,7 @@ from rest_framework.serializers import (ModelSerializer,
                                         EmailField,
                                         CharField,)
 
-# from api.core import id_and_amount_pull_out_from_dict
+from api.core import id_and_amount_pull_out_from_dict
 from recipes.models import Recipe, Tag, Ingredient, CountIngredient
 
 
@@ -30,7 +30,7 @@ class CustomUserSerializer(ModelSerializer):
             "password",
             "is_subscribed"
         )
-        read_only_fields = "__all__"
+        read_only_fields = "is_subscribed",
         extra_kwargs = {"password": {"write_only": True}}
 
     def get_is_subscribed(self, obj):
@@ -55,14 +55,14 @@ class TagSerializer(ModelSerializer):
     class Meta:
         model = Tag
         fields = "__all__"
-        read_only_fields = ("__all__",)
+        read_only_fields = "__all__",
 
 
 class IngredientSerializer(ModelSerializer):
     class Meta:
         model = Ingredient
         fields = "__all__"
-        read_only_fields = ("__all__",)
+        read_only_fields = "__all__",
 
 
 class IngredientAmountSerializer(ModelSerializer):
@@ -73,7 +73,7 @@ class IngredientAmountSerializer(ModelSerializer):
     class Meta:
         model = CountIngredient
         fields = ('id', 'amount', 'name', 'measurement_unit')
-        read_only_fields = "__all__"
+        # read_only_fields = "__all__"
 
     def get_name(self, obj):
         return obj.ingredient.name
@@ -133,31 +133,19 @@ class RecipeSerializer(ModelSerializer):
         if not data_ingredients or not id_tags:
             raise ValidationError('Заполните все поля и картинку не забудьте!')
 
-        # Нахождение ингредиентов готовых
-        ingredients_obj = []
-
-        # list_id = id_and_amount_pull_out_from_dict(data_ingredients)
-
-        # for id_, amount in list_id:
-        #     try:
-        #         obj = Ingredient.objects.get(id=id_)
-        #         ingredients_obj.append((obj, amount))
-        # except Ingredient.DoesNotExist:
-        #     raise ValueError("""Список ингредиентов уже готов выберите
-        #                      из нее и нажмите добавить ингредиент""")
+        list_id_amount = id_and_amount_pull_out_from_dict(Ingredient,
+                                                          data_ingredients)
 
         # Нахождение тэгов
-        tags_obj = []
-        for id_tag in id_tags:
-            try:
-                obj = Tag.objects.get(id=id_tag)
-                tags_obj.append(obj)
-            except Tag.DoesNotExist:
-                raise ValueError("Такого тэга нет")
+        
+        try:
+            tags_obj = Tag.objects.filter(id__in=id_tags)
+        except Tag.DoesNotExist:
+            raise ValueError("Такого тэга нет")
 
         data.update(
             {
-                'ingredients': ingredients_obj,
+                'ingredients': list_id_amount,
                 'tags': tags_obj,
             }
         )
@@ -169,11 +157,12 @@ class RecipeSerializer(ModelSerializer):
         ingredients = validated_data.pop('ingredients')
 
         new_recipe = Recipe.objects.create(author=user, **validated_data)
-        for ingredient, amount in ingredients:
-            CountIngredient.objects.create(
-                recipe=new_recipe,
-                ingredient=ingredient,
-                amount=amount)
+        amount_ingr = [
+            CountIngredient(ingredient=value[0],
+                            amount=value[1],
+                            recipe=new_recipe) for value in ingredients
+        ]
+        CountIngredient.objects.bulk_create(amount_ingr)
         new_recipe.tags.set(tags)
         return new_recipe
 
@@ -198,25 +187,16 @@ class RecipeSerializer(ModelSerializer):
         ingredients_data = validated_data.get('ingredients')
         if ingredients_data is not None:
             instance.ingredients.clear()
-            for ingredient_data in ingredients_data:
-                ingredient, amount = ingredient_data
-                CountIngredient.objects.create(recipe=instance,
-                                               ingredient=ingredient,
-                                               amount=amount)
+            amount_ingr = [
+                CountIngredient(ingredient=value[0],
+                                amount=value[1],
+                                recipe=instance) for value in ingredients_data
+            ]
+        CountIngredient.objects.bulk_create(amount_ingr)
 
         tags_data = validated_data.get('tags')
         if tags_data is not None:
             instance.tags.set(tags_data)
-
-        fields_changed = False
-        for field, old_value in old_data.items():
-            new_value = getattr(instance, field)
-            if new_value != old_value:
-                fields_changed = True
-                break
-
-                if fields_changed:
-                    pass
 
         return instance
 
@@ -231,7 +211,7 @@ class ShortRecipeSerializer(ModelSerializer):
     class Meta:
         model = Recipe
         fields = "id", "name", "image", "cooking_time"
-        read_only_fields = "__all__"
+        read_only_fields = "__all__",
 
 
 class UserSubscribeSerializer(CustomUserSerializer):
