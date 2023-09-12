@@ -1,18 +1,17 @@
 version: '3.3'
-volumes:
-  pg_data:
-  static_dir: 
-  media_dir:
+
   
 services:
   db:
+    container_name: foodgram-db
     image: postgres:13.10
     env_file: .env
     volumes:
       - pg_data:/var/lib/postgresql/data/
 
   backend:
-    image: zalimoka/foodgram_backend
+    container_name: foodgram-app
+    image: zalimoka/foodgram_backend:latest
     env_file: .env
     volumes:
       - static_dir:/app/static/
@@ -21,14 +20,17 @@ services:
       - db
 
   frontend:
-    image: zalimoka/foodgram_frontend
+    container_name: foodgram-front
+    image: zalimoka/foodgram_frontend:latest
     env_file: .env
     volumes:
       - ../frontend/:/app/result_build/
 
 
   nginx:
+    container_name: foodgram-proxy
     image: nginx:1.19.3
+    restart: always
     ports:
       - 8001:80
     volumes:
@@ -40,3 +42,8 @@ services:
     depends_on:
       - frontend
       - backend
+
+volumes:
+  pg_data:
+  static_dir: 
+  media_dir:
