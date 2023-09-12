@@ -3,7 +3,6 @@ volumes:
   pg_data:
   static_dir: 
   media_dir:
-
 services:
   db:
     image: postgres:13.10
