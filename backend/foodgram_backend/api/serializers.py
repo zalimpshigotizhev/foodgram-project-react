@@ -6,7 +6,7 @@ from rest_framework.serializers import (ModelSerializer,
                                         EmailField,
                                         CharField,)
 
-from api.core import id_and_amount_pull_out_from_dict
+# from api.core import id_and_amount_pull_out_from_dict
 from recipes.models import Recipe, Tag, Ingredient, CountIngredient
 
 
@@ -136,15 +136,15 @@ class RecipeSerializer(ModelSerializer):
         # Нахождение ингредиентов готовых
         ingredients_obj = []
 
-        list_id = id_and_amount_pull_out_from_dict(data_ingredients)
+        # list_id = id_and_amount_pull_out_from_dict(data_ingredients)
 
-        for id_, amount in list_id:
-            try:
-                obj = Ingredient.objects.get(id=id_)
-                ingredients_obj.append((obj, amount))
-            # except Ingredient.DoesNotExist:
-            #     raise ValueError("""Список ингредиентов уже готов выберите
-            #                      из нее и нажмите добавить ингредиент""")
+        # for id_, amount in list_id:
+        #     try:
+        #         obj = Ingredient.objects.get(id=id_)
+        #         ingredients_obj.append((obj, amount))
+        # except Ingredient.DoesNotExist:
+        #     raise ValueError("""Список ингредиентов уже готов выберите
+        #                      из нее и нажмите добавить ингредиент""")
 
         # Нахождение тэгов
         tags_obj = []

@@ -1,7 +1,8 @@
 from django.shortcuts import get_object_or_404
 from django.http import HttpResponse
 from django.db.models import Q
-from backend.foodgram_backend.api.permissions import AdminOrReadOnly, AuthorStaffOrReadOnly
+from backend.foodgram_backend.api.permissions import (AdminOrReadOnly,
+                                                      AuthorStaffOrReadOnly)
 from rest_framework.response import Response
 from rest_framework.viewsets import ModelViewSet, ReadOnlyModelViewSet
 from rest_framework.decorators import action
@@ -26,7 +27,6 @@ from api.serializers import (ShortRecipeSerializer,
                              IngredientSerializer,
                              RecipeSerializer,
                              UserSubscribeSerializer)
-
 
 
 User = get_user_model()
@@ -106,7 +106,7 @@ class IngredientViewSet(ReadOnlyModelViewSet):
     permission_classes = (AdminOrReadOnly,)
 
     def get_queryset(self):
-        query = self.request.query_params.get("name"," ").strip().lower()
+        query = self.request.query_params.get("name", " ").strip().lower()
         return Ingredient.objects.filter(
             Q(name__startswith=query) | Q(name__icontains=query)
         )
@@ -183,7 +183,6 @@ class RecipeViewSet(ModelViewSet):
             либо для POST, либо для DELETE.
 
         """
-
 
     @shopping_cart.mapping.post
     def create_shopping_cart(self, request, pk):
