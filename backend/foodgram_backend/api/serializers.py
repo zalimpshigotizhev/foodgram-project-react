@@ -73,7 +73,7 @@ class IngredientAmountSerializer(ModelSerializer):
     class Meta:
         model = CountIngredient
         fields = ('id', 'amount', 'name', 'measurement_unit')
-        # read_only_fields = "__all__"
+        read_only_fields = "__all__"
 
     def get_name(self, obj):
         return obj.ingredient.name
@@ -223,7 +223,7 @@ class UserSubscribeSerializer(CustomUserSerializer):
             "recipes",
             "recipes_count",
         )
-        read_only_fields = "__all__"
+        read_only_fields = "__all__",
 
     def get_is_subscribed(*args):
         return True
