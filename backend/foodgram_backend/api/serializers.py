@@ -7,7 +7,8 @@ from rest_framework.serializers import (ModelSerializer,
                                         CharField,)
 
 from api.core import id_and_amount_pull_out_from_dict
-from recipes.models import Recipe, Tag, Ingredient, CountIngredient
+from recipes.models import Favorite, Recipe, Tag, Ingredient, CountIngredient
+from users.models import Subscribe
 
 
 User = get_user_model()
@@ -55,14 +56,12 @@ class TagSerializer(ModelSerializer):
     class Meta:
         model = Tag
         fields = "__all__"
-        # read_only_fields = ["__all__"]
 
 
 class IngredientSerializer(ModelSerializer):
     class Meta:
         model = Ingredient
         fields = "__all__"
-        # read_only_fields = ["__all__"]
 
 
 class IngredientAmountSerializer(ModelSerializer):
@@ -73,7 +72,6 @@ class IngredientAmountSerializer(ModelSerializer):
     class Meta:
         model = CountIngredient
         fields = ('id', 'amount', 'name', 'measurement_unit')
-        # read_only_fields = ["__all__"]
 
     def get_name(self, obj):
         return obj.ingredient.name
@@ -89,7 +87,7 @@ class RecipeSerializer(ModelSerializer):
     ingredients = SerializerMethodField()
     is_favorited = SerializerMethodField()
     is_in_shopping_cart = SerializerMethodField()
-    tags = TagSerializer(many=True, read_only=True)
+    tags = TagSerializer(many=True)
     author = CustomUserSerializer(read_only=True)
     image = Base64ImageField()
 
@@ -202,7 +200,6 @@ class ShortRecipeSerializer(ModelSerializer):
     class Meta:
         model = Recipe
         fields = "id", "name", "image", "cooking_time"
-        # read_only_fields = ["__all__"]
 
 
 class UserSubscribeSerializer(CustomUserSerializer):
@@ -210,6 +207,18 @@ class UserSubscribeSerializer(CustomUserSerializer):
 
     recipes = ShortRecipeSerializer(many=True, read_only=True)
     recipes_count = SerializerMethodField()
+
+    def get_is_subscribed(*args):
+        return True
+
+    def get_recipes_count(self, obj):
+        return obj.recipes.count()
+
+    def validate(self, data):
+        request = self.context.get('request')
+        if request and request.user == data['user']:
+            raise ValidationError("Вы не можете подписаться на самого себя")
+        return data
 
     class Meta:
         model = User
@@ -223,10 +232,71 @@ class UserSubscribeSerializer(CustomUserSerializer):
             "recipes",
             "recipes_count",
         )
-        # read_only_fields = ["__all__"]
 
-    def get_is_subscribed(*args):
-        return True
 
-    def get_recipes_count(self, obj):
-        return obj.recipes.count()
+class SubscribeSerializer(ModelSerializer):
+    class Meta:
+        model = Subscribe
+        fields = '__all__'
+        extra_kwargs = {
+            'user': {'read_only': True},
+            'author': {'read_only': True},
+        }
+
+    def validate(self, data):
+        user = self.context.get('request').user
+        author = self.context.get('author')
+        existing_sub = Subscribe.objects.filter(user=user,
+                                                author=author).first()
+        if existing_sub:
+            raise ValidationError("Вы уже подписаны на пользователя!")
+        if author == user:
+            raise ValidationError("Вы не можете подписаться на самого себя")
+        return data
+
+    def create(self, validated_data):
+        user = validated_data.get('user')
+        author = validated_data.get('author')
+        return Subscribe.objects.create(user=user,
+                                        author=author)
+
+    def to_representation(self, obj):
+        representation = super().to_representation(obj)
+        author_data = UserSubscribeSerializer(obj.author, context={
+            'request': self.context.get('request')
+        }).data
+        representation['author'] = author_data
+        return representation
+
+
+class FavoriteSerializer(ModelSerializer):
+    class Meta:
+        model = Favorite
+        fields = '__all__'
+        extra_kwargs = {
+            'user': {'read_only': True},
+            'author': {'read_only': True},
+            'recipe': {'read_only': True},
+        }
+
+    def validate(self, data):
+        user = self.context.get('request').user
+        recipe = self.context.get('recipe')
+
+        existing_fav = Favorite.objects.filter(user=user,
+                                               recipe=recipe).first()
+
+        if existing_fav:
+            raise ValidationError("Вы уже добавили в избранное!")
+        return data
+
+    def create(self, validated_data):
+        user = validated_data.get('user')
+        recipe = validated_data.get('recipe')
+        return Favorite.objects.create(user=user,
+                                       recipe=recipe)
+
+    def to_representation(self, obj):
+        return ShortRecipeSerializer(obj.recipe, context={
+            'request': self.context.get('request')
+        }).data

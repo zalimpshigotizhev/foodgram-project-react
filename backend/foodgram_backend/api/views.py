@@ -22,10 +22,11 @@ from recipes.models import (Favorite,
                             CountIngredient,
                             Recipe,
                             Cart)
-from api.serializers import (ShortRecipeSerializer,
+from api.serializers import (FavoriteSerializer, ShortRecipeSerializer,
                              TagSerializer,
                              IngredientSerializer,
                              RecipeSerializer,
+                             SubscribeSerializer,
                              UserSubscribeSerializer)
 
 
@@ -52,22 +53,15 @@ class CustomUserViewSet(DjUserViewSet):
     def create_subscribe(self, request, id):
         author = get_object_or_404(CustomUser, id=id)
 
-        existing_subscription = Subscribe.objects.filter(user=request.user,
-                                                         author=author).first()
-        if existing_subscription:
-            return Response({"error":
-                             "Вы уже подписаны на этого автора"},
-                            status=HTTP_400_BAD_REQUEST)
-        if request.user.username == author.username:
-            return Response({"error":
-                             "Вы не можете подписаться на самого себя"},
-                            status=HTTP_400_BAD_REQUEST)
-        # Создайте новую подписку
-        Subscribe.objects.create(user=request.user, author=author)
-        serializer = self.add_serializer(author)
-
-        return Response(serializer.data,
-                        status=HTTP_201_CREATED)
+        subscribe_serializer = SubscribeSerializer(data=request.data,
+                                                   context={'request': request,
+                                                            'author': author})
+        if subscribe_serializer.is_valid(raise_exception=True):
+            subscribe_serializer.save(user=request.user,
+                                      author=author)
+            return Response(subscribe_serializer.data, status=HTTP_201_CREATED)
+        return Response(subscribe_serializer.errors,
+                        status=HTTP_400_BAD_REQUEST)
 
     @subscribe.mapping.delete
     def delete_subscribe(self, request, id):
@@ -134,7 +128,7 @@ class RecipeViewSet(ModelViewSet):
             queryset = queryset.filter(is_favorited__user=user)
 
         if tags:
-            return queryset.filter(tags__slug__in=tags)
+            return queryset.filter(tags__slug__in=tags).distinct()
         return queryset
 
     @action(detail=True)
@@ -149,18 +143,18 @@ class RecipeViewSet(ModelViewSet):
     @favorite.mapping.post
     def create_favorite(self, request, pk):
         recipe = get_object_or_404(Recipe, pk=pk)
-        existing_favorite = Favorite.objects.filter(user=request.user,
-                                                    recipe=recipe).first()
-        if existing_favorite:
-            return Response({"errors":
-                            "Вы уже добавили этот рецепт в избранное"},
-                            status=HTTP_400_BAD_REQUEST)
-        favorite = Favorite.objects.create(user=request.user,
-                                           recipe=recipe)
-        serializer = self.add_serializer(recipe)
-        favorite.save()
-        return Response(serializer.data,
-                        status=HTTP_201_CREATED)
+
+        favorite_serializer = FavoriteSerializer(
+            data=request.data,
+            context={'request': request,
+                     'recipe': recipe})
+        if favorite_serializer.is_valid(raise_exception=True):
+            favorite_serializer.save(user=request.user,
+                                     recipe=recipe)
+            return Response(favorite_serializer.data,
+                            status=HTTP_201_CREATED)
+        return Response(favorite_serializer.errors,
+                        status=HTTP_400_BAD_REQUEST)
 
     @favorite.mapping.delete
     def delete_favorite(self, request, pk):
