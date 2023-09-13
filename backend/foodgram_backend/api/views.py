@@ -128,7 +128,7 @@ class RecipeViewSet(ModelViewSet):
             queryset = queryset.filter(is_favorited__user=user)
 
         if tags:
-            return queryset.prefetch_related('tags').filter(tags__isnull=False)
+            return queryset.filter(tags__slug__in=tags).distinct()
         return queryset
 
     @action(detail=True)
