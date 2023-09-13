@@ -87,7 +87,7 @@ class RecipeSerializer(ModelSerializer):
     ingredients = SerializerMethodField()
     is_favorited = SerializerMethodField()
     is_in_shopping_cart = SerializerMethodField()
-    tags = TagSerializer(many=True)
+    tags = TagSerializer(many=True, read_only=True)
     author = CustomUserSerializer(read_only=True)
     image = Base64ImageField()
 
@@ -125,8 +125,8 @@ class RecipeSerializer(ModelSerializer):
         return user.in_carts.filter(recipe=recipe).exists()
 
     def validate(self, data):
-        data_ingredients = self.initial_data.get('ingredients')
         id_tags = self.initial_data.get('tags')
+        data_ingredients = self.initial_data.get('ingredients')
 
         if not data_ingredients or not id_tags:
             raise ValidationError('Заполните все поля и картинку не забудьте!')
