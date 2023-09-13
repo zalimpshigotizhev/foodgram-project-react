@@ -55,14 +55,14 @@ class TagSerializer(ModelSerializer):
     class Meta:
         model = Tag
         fields = "__all__"
-        read_only_fields = "__all__",
+        read_only_fields = "__all__"
 
 
 class IngredientSerializer(ModelSerializer):
     class Meta:
         model = Ingredient
         fields = "__all__"
-        read_only_fields = "__all__",
+        read_only_fields = "__all__"
 
 
 class IngredientAmountSerializer(ModelSerializer):
@@ -202,7 +202,7 @@ class ShortRecipeSerializer(ModelSerializer):
     class Meta:
         model = Recipe
         fields = "id", "name", "image", "cooking_time"
-        read_only_fields = "__all__",
+        read_only_fields = "__all__"
 
 
 class UserSubscribeSerializer(CustomUserSerializer):
@@ -223,7 +223,7 @@ class UserSubscribeSerializer(CustomUserSerializer):
             "recipes",
             "recipes_count",
         )
-        read_only_fields = "__all__",
+        read_only_fields = "__all__"
 
     def get_is_subscribed(*args):
         return True
