@@ -30,7 +30,7 @@ class CustomUserSerializer(ModelSerializer):
             "password",
             "is_subscribed"
         )
-        read_only_fields = "is_subscribed",
+        read_only_fields = ("is_subscribed",)
         extra_kwargs = {"password": {"write_only": True}}
 
     def get_is_subscribed(self, obj):
