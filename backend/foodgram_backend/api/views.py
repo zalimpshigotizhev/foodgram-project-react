@@ -14,7 +14,7 @@ from rest_framework.status import (HTTP_400_BAD_REQUEST,
 from djoser.views import UserViewSet as DjUserViewSet
 
 from users.models import CustomUser, Subscribe
-from api.paginators import CustomPagination
+from api.paginators import CustomPagination, RecipePagination
 from api.permissions import OwnerUserOrReadOnly
 from recipes.models import (Favorite,
                             Tag,
@@ -77,7 +77,7 @@ class CustomUserViewSet(DjUserViewSet):
         subscription.delete()
         return Response(status=HTTP_204_NO_CONTENT)
 
-    @action(methods=("get",), detail=False, pagination_class=CustomPagination)
+    @action(methods=("get",), detail=False, pagination_class=RecipePagination)
     def subscriptions(self, request):
         pages = self.paginate_queryset(
             User.objects.filter(subscribers__user=self.request.user)
