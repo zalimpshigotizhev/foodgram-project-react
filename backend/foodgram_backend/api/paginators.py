@@ -8,5 +8,6 @@ class CustomPagination(PageNumberPagination):
 class NoPagination(PageNumberPagination):
     page_size = 10000
 
+
 class RecipePagination(PageNumberPagination):
     page_size_query_param = "recipes_limit"
