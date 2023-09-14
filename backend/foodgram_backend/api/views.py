@@ -77,7 +77,7 @@ class CustomUserViewSet(DjUserViewSet):
         subscription.delete()
         return Response(status=HTTP_204_NO_CONTENT)
 
-    @action(methods=("get",), detail=False)
+    @action(methods=("get",), detail=False, pagination_class=CustomPagination)
     def subscriptions(self, request):
         pages = self.paginate_queryset(
             User.objects.filter(subscribers__user=self.request.user)
