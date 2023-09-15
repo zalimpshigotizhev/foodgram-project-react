@@ -121,6 +121,10 @@ class RecipeViewSet(ModelViewSet):
         is_favorited = query_params.get("is_favorited")
         carts = query_params.get("is_in_shopping_cart")
         tags = query_params.getlist("tags")
+        author = query_params.get("author")
+
+        if author:
+            queryset = queryset.filter(author=author)
 
         if carts == "1":
             queryset = queryset.filter(in_carts__user=user)
