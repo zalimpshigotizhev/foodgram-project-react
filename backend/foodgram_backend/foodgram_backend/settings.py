@@ -1,25 +1,16 @@
-
 from pathlib import Path
-# import os
+import os
 
-# Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 
-# Quick-start development settings - unsuitable for production
-# See https://docs.djangoproject.com/en/4.2/howto/deployment/checklist/
+SECRET_KEY = os.getenv('SECRET_KEY')
 
-# SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-g_+6scupq*(p9%vp0)+x!knor+sv1*k4ymn)z$27^@v4s2bk-j'
+DEBUG = os.getenv('DEBUG')
 
-# SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS').split()
 
-# ALLOWED_HOSTS = ['backend', 'localhost']
-ALLOWED_HOSTS = ['backend', '127.0.0.1', 'localhost', 'foodgramzalim.ddns.net', '158.160.73.226']
-# ALLOWED_HOSTS = []
-
-CSRF_TRUSTED_ORIGINS = ['https://foodgramzalim.ddns.net']
+CSRF_TRUSTED_ORIGINS = os.getenv('CSRF_TRUSTED_ORIGINS').split()
 
 INSTALLED_APPS = [
     'django.contrib.admin',
@@ -90,8 +81,6 @@ DATABASES = {
     }
 }
 
-# Password validation
-# https://docs.djangoproject.com/en/4.2/ref/settings/#auth-password-validators
 
 AUTH_PASSWORD_VALIDATORS = [
     {
@@ -110,8 +99,6 @@ AUTH_PASSWORD_VALIDATORS = [
 
 MEDIA_URL = "media/"
 MEDIA_ROOT = BASE_DIR / MEDIA_URL
-# Internationalization
-# https://docs.djangoproject.com/en/4.2/topics/i18n/
 
 LANGUAGE_CODE = "ru"
 
@@ -124,15 +111,9 @@ USE_TZ = True
 
 AUTH_USER_MODEL = 'users.CustomUser'
 
-
-# Static files (CSS, JavaScript, Images)
-# https://docs.djangoproject.com/en/4.2/howto/static-files/
-
 STATIC_URL = '/backend_static/'
 STATIC_ROOT = BASE_DIR / 'static'
 
-# Default primary key field type
-# https://docs.djangoproject.com/en/4.2/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 

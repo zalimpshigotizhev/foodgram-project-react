@@ -35,7 +35,7 @@ class CustomUserSerializer(ModelSerializer):
         extra_kwargs = {"password": {"write_only": True}}
 
     def get_is_subscribed(self, obj):
-        user = self.context.get("request").user
+        user = self.context["request"].user
         if user.is_anonymous or (user == obj):
             return False
         return user.subscriptions.filter(author=obj).exists()
@@ -119,13 +119,13 @@ class RecipeSerializer(ModelSerializer):
         return False
 
     def get_is_in_shopping_cart(self, recipe):
-        user = self.context.get("view").request.user
+        user = self.context["view"].request.user
         if user.is_anonymous:
             return False
         return user.in_carts.filter(recipe=recipe).exists()
 
     def validate(self, data):
-        id_tags = self.initial_data.get('tags')
+        id_tags = self.initial_data['tags']
         data_ingredients = self.initial_data.get('ingredients')
 
         if not data_ingredients or not id_tags:
@@ -215,15 +215,15 @@ class UserSubscribeSerializer(CustomUserSerializer):
         return obj.recipes.count()
 
     def get_recipes(self, obj):
-        request = self.context.get('request')
-        recipes_limit = request.query_params.get('recipes_limit')
+        request = self.context['request']
+        recipes_limit = request.query_params['recipes_limit']
         recipes_auth = Recipe.objects.filter(author=obj)
         if recipes_limit:
             recipes_auth = recipes_auth[:int(recipes_limit)]
         return ShortRecipeSerializer(recipes_auth, many=True).data
 
     def validate(self, data):
-        request = self.context.get('request')
+        request = self.context['request']
         if request and request.user == data['user']:
             raise ValidationError("Вы не можете подписаться на самого себя")
         return data
@@ -252,8 +252,8 @@ class SubscribeSerializer(ModelSerializer):
         }
 
     def validate(self, data):
-        user = self.context.get('request').user
-        author = self.context.get('author')
+        user = self.context['request'].user
+        author = self.context['author']
         existing_sub = Subscribe.objects.filter(user=user,
                                                 author=author).first()
         if existing_sub:
@@ -263,15 +263,15 @@ class SubscribeSerializer(ModelSerializer):
         return data
 
     def create(self, validated_data):
-        user = validated_data.get('user')
-        author = validated_data.get('author')
+        user = validated_data['user']
+        author = validated_data['author']
         return Subscribe.objects.create(user=user,
                                         author=author)
 
     def to_representation(self, obj):
         representation = super().to_representation(obj)
         author_data = UserSubscribeSerializer(obj.author, context={
-            'request': self.context.get('request')
+            'request': self.context['request']
         }).data
         representation['author'] = author_data
         return representation
@@ -288,8 +288,8 @@ class FavoriteSerializer(ModelSerializer):
         }
 
     def validate(self, data):
-        user = self.context.get('request').user
-        recipe = self.context.get('recipe')
+        user = self.context['request'].user
+        recipe = self.context['recipe']
 
         existing_fav = Favorite.objects.filter(user=user,
                                                recipe=recipe).first()
@@ -299,12 +299,12 @@ class FavoriteSerializer(ModelSerializer):
         return data
 
     def create(self, validated_data):
-        user = validated_data.get('user')
-        recipe = validated_data.get('recipe')
+        user = validated_data['user']
+        recipe = validated_data['recipe']
         return Favorite.objects.create(user=user,
                                        recipe=recipe)
 
     def to_representation(self, obj):
         return ShortRecipeSerializer(obj.recipe, context={
-            'request': self.context.get('request')
+            'request': self.context['request']
         }).data
