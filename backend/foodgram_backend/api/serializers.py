@@ -6,7 +6,7 @@ from rest_framework.serializers import (ModelSerializer,
                                         EmailField,
                                         CharField,)
 
-from api.core import id_and_amount_pull_out_from_dict
+from api.core import id_and_amount_pull_out_from_dict, make_new_count_ingr
 from recipes.models import Favorite, Recipe, Tag, Ingredient, CountIngredient
 from users.models import Subscribe
 
@@ -127,9 +127,23 @@ class RecipeSerializer(ModelSerializer):
     def validate(self, data):
         id_tags = self.initial_data['tags']
         data_ingredients = self.initial_data.get('ingredients')
+        author = self.context['request'].user
+        method = self.context['request'].method
+
+        if Recipe.objects.filter(
+            name=data['name'], author=author
+        ).exists() and method == 'POST':
+            raise ValidationError(
+                "Рецепт с таким названием уже существует у вас."
+            )
 
         if not data_ingredients or not id_tags:
             raise ValidationError('Заполните все поля и картинку не забудьте!')
+
+        for ingredient in data_ingredients:
+            amount = ingredient['amount']
+            if amount > 3200:
+                raise ValidationError("Кол-ство не должно превышать 3200.")
 
         list_id_amount = id_and_amount_pull_out_from_dict(Ingredient,
                                                           data_ingredients)
@@ -155,12 +169,7 @@ class RecipeSerializer(ModelSerializer):
         ingredients = validated_data.pop('ingredients')
 
         new_recipe = Recipe.objects.create(author=user, **validated_data)
-        amount_ingr = [
-            CountIngredient(ingredient=value[0],
-                            amount=value[1],
-                            recipe=new_recipe) for value in ingredients
-        ]
-        CountIngredient.objects.bulk_create(amount_ingr)
+        make_new_count_ingr(CountIngredient, new_recipe, ingredients)
         new_recipe.tags.set(tags)
         return new_recipe
 
@@ -176,12 +185,7 @@ class RecipeSerializer(ModelSerializer):
         ingredients_data = validated_data.get('ingredients')
         if ingredients_data is not None:
             instance.ingredients.clear()
-            amount_ingr = [
-                CountIngredient(ingredient=value[0],
-                                amount=value[1],
-                                recipe=instance) for value in ingredients_data
-            ]
-        CountIngredient.objects.bulk_create(amount_ingr)
+            make_new_count_ingr(CountIngredient, instance, ingredients_data)
 
         tags_data = validated_data.get('tags')
         if tags_data is not None:
@@ -216,11 +220,13 @@ class UserSubscribeSerializer(CustomUserSerializer):
 
     def get_recipes(self, obj):
         request = self.context['request']
-        recipes_limit = request.query_params['recipes_limit']
+        recipes_limit = request.query_params.get('recipes_limit')
         recipes_auth = Recipe.objects.filter(author=obj)
-        if recipes_limit:
+
+        if recipes_limit is not None:
             recipes_auth = recipes_auth[:int(recipes_limit)]
-        return ShortRecipeSerializer(recipes_auth, many=True).data
+            return ShortRecipeSerializer(recipes_auth, many=True).data
+        return ShortRecipeSerializer(many=True).data
 
     def validate(self, data):
         request = self.context['request']
@@ -254,8 +260,7 @@ class SubscribeSerializer(ModelSerializer):
     def validate(self, data):
         user = self.context['request'].user
         author = self.context['author']
-        existing_sub = Subscribe.objects.filter(user=user,
-                                                author=author).first()
+        existing_sub = user.subscriptions.filter(author=author).first()
         if existing_sub:
             raise ValidationError("Вы уже подписаны на пользователя!")
         if author == user:
@@ -291,8 +296,7 @@ class FavoriteSerializer(ModelSerializer):
         user = self.context['request'].user
         recipe = self.context['recipe']
 
-        existing_fav = Favorite.objects.filter(user=user,
-                                               recipe=recipe).first()
+        existing_fav = user.in_favorites.filter(recipe=recipe).first()
 
         if existing_fav:
             raise ValidationError("Вы уже добавили в избранное!")

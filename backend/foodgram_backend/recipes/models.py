@@ -159,7 +159,7 @@ class CountIngredient(models.Model):
                 'Нужен хоть грамм/мл!'
             ),
             MaxValueValidator(
-                32000,
+                3200,
                 'Слишком много!')
         )
     )

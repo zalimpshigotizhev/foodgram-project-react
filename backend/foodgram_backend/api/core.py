@@ -22,3 +22,16 @@ def id_and_amount_pull_out_from_dict(classes, data_ingr):
 
     ingredients = classes.objects.filter(id__in=id_list)
     return list(zip(ingredients, amounts))
+
+
+def make_new_count_ingr(classes, recipe, ingredients):
+    """ Создает связку Ingredient:CountIngredient
+        с помощью метода мгновенного добавление в базу данных .bulk_create()
+    """
+    amount_list = []
+    for ingredient, amount in ingredients:
+        amount_ingr = classes(ingredient=ingredient,
+                              amount=amount,
+                              recipe=recipe)
+        amount_list.append(amount_ingr)
+    classes.objects.bulk_create(amount_list)
