@@ -1,5 +1,8 @@
 # FOODGRAM
 # АВТОР __ ПШИГОТИЖЕВ ЗАЛИМ
+Админка:
+Zalim
+552216742
 # Добро пожаловать на Foodgram!
 
 https://foodgramzalim.ddns.net/
