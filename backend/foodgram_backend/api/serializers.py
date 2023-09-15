@@ -205,7 +205,7 @@ class ShortRecipeSerializer(ModelSerializer):
 class UserSubscribeSerializer(CustomUserSerializer):
     """Сериализатор вывода авторов на которых подписан текущий пользователь."""
 
-    recipes = ShortRecipeSerializer(many=True, read_only=True)
+    recipes = SerializerMethodField()
     recipes_count = SerializerMethodField()
 
     def get_is_subscribed(*args):
@@ -213,6 +213,14 @@ class UserSubscribeSerializer(CustomUserSerializer):
 
     def get_recipes_count(self, obj):
         return obj.recipes.count()
+    
+    def get_recipes(self, obj):
+        request = self.context.get('request')
+        recipes_limit = request.query_params.get('recipes_limit')
+        recipes_auth = Recipe.objects.filter(author=obj)
+        if recipes_limit:
+            recipes_auth = recipes_auth[:int(recipes_limit)]
+        return ShortRecipeSerializer(recipes_auth, many=True).data
 
     def validate(self, data):
         request = self.context.get('request')

@@ -10,4 +10,5 @@ class NoPagination(PageNumberPagination):
 
 
 class RecipePagination(PageNumberPagination):
+    page_size = 2
     page_size_query_param = "recipes_limit"
