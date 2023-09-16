@@ -14,7 +14,8 @@ from api.core import (DEFAULT_INGR,
                       MAX_LENGTH_NAME_RECIPE,
                       MAX_LENGTH_NAME_INGR,
                       MAX_LENGTH_NAME_TAG,
-                      MAX_LENGTH_MEASUR_UNIT)
+                      MAX_LENGTH_MEASUR_UNIT,
+                      MAX_LENGTH_NAME_COLOR)
 
 User = get_user_model()
 
@@ -29,6 +30,7 @@ class Tag(models.Model):
     )
     color = models.CharField(
         ('цвет'),
+        max_length=MAX_LENGTH_NAME_COLOR,
         unique=True,
 
     )

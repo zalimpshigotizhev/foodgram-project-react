@@ -1,3 +1,5 @@
+from collections import defaultdict
+
 from django.shortcuts import get_object_or_404
 from django.http import HttpResponse
 from django.db.models import Q
@@ -205,7 +207,9 @@ class RecipeViewSet(ModelViewSet):
     def download_shopping_cart(self, request):
         user = self.request.user
         recipes = Recipe.objects.filter(in_carts__user=request.user)
-        ingredients_list = {}
+
+        ingredients_list = defaultdict(int)
+
         for recipe in recipes:
             ingredients = recipe.ingredients.all()
 
@@ -214,16 +218,16 @@ class RecipeViewSet(ModelViewSet):
                     recipe=recipe,
                     ingredient=ingredient).amount
 
-                if ingredients_list.get(str(ingredient), False):
-                    ingredients_list[str(ingredient)] += amount
-                else:
-                    ingredients_list[str(ingredient)] = amount
+                ingredients_list[str(ingredient)] += amount
 
-        response = HttpResponse("\n".join(
-            [f"{ingredient} - {amount}" for ingredient,
-             amount in ingredients_list.items()]), content_type="text/plain")
+        response = HttpResponse(
+            "\n".join(
+                [f"{ingredient} - {amount}"
+                 for ingredient, amount in ingredients_list.items()]
+            ), content_type="text/plain"
+        )
 
         response["Content-Disposition"] = (
-            f"attachment; filename='{str(user)}_shopping_cart.txt'")
+            f"attachment; filename={str(user)}_shopping_cart.txt")
 
         return response
