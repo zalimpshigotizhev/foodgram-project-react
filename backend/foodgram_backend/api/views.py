@@ -1,8 +1,6 @@
 from django.shortcuts import get_object_or_404
 from django.http import HttpResponse
 from django.db.models import Q
-from api.permissions import (AdminOrReadOnly,
-                             AuthorStaffOrReadOnly)
 from rest_framework.response import Response
 from rest_framework.viewsets import ModelViewSet, ReadOnlyModelViewSet
 from rest_framework.decorators import action
@@ -28,7 +26,8 @@ from api.serializers import (FavoriteSerializer, ShortRecipeSerializer,
                              RecipeSerializer,
                              SubscribeSerializer,
                              UserSubscribeSerializer)
-
+from api.permissions import (AdminOrReadOnly,
+                             AuthorStaffOrReadOnly)
 
 User = get_user_model()
 
@@ -54,26 +53,21 @@ class CustomUserViewSet(DjUserViewSet):
         author = get_object_or_404(CustomUser, id=id)
 
         subscribe_serializer = SubscribeSerializer(data=request.data,
-                                                   context={'request': request,
-                                                            'author': author})
-        if subscribe_serializer.is_valid(raise_exception=True):
-            subscribe_serializer.save(user=request.user,
-                                      author=author)
-            return Response(subscribe_serializer.data, status=HTTP_201_CREATED)
-        return Response(subscribe_serializer.errors,
-                        status=HTTP_400_BAD_REQUEST)
+                                                   context={"request": request,
+                                                            "author": author})
+        subscribe_serializer.is_valid(raise_exception=True)
+        subscribe_serializer.save(user=request.user, author=author)
+        return Response(subscribe_serializer.data, status=HTTP_201_CREATED)
 
     @subscribe.mapping.delete
     def delete_subscribe(self, request, id):
         author = get_object_or_404(CustomUser, id=id)
 
-        try:
-            subscription = Subscribe.objects.get(user=request.user,
-                                                 author=author)
-        except Subscribe.DoesNotExist:
+        subscription = Subscribe.objects.filter(user=request.user,
+                                                author=author).first()
+        if subscription is None:
             return Response({"error": "Вы уже отписались!"},
                             status=HTTP_400_BAD_REQUEST)
-
         subscription.delete()
         return Response(status=HTTP_204_NO_CONTENT)
 
@@ -83,7 +77,7 @@ class CustomUserViewSet(DjUserViewSet):
             User.objects.filter(subscribers__user=self.request.user)
         )
         serializer = UserSubscribeSerializer(pages, many=True,
-                                             context={'request': request})
+                                             context={"request": request})
         return self.get_paginated_response(serializer.data)
 
 
@@ -151,25 +145,22 @@ class RecipeViewSet(ModelViewSet):
 
         favorite_serializer = FavoriteSerializer(
             data=request.data,
-            context={'request': request,
-                     'recipe': recipe})
-        if favorite_serializer.is_valid(raise_exception=True):
-            favorite_serializer.save(user=request.user,
-                                     recipe=recipe)
-            return Response(favorite_serializer.data,
-                            status=HTTP_201_CREATED)
-        return Response(favorite_serializer.errors,
-                        status=HTTP_400_BAD_REQUEST)
+            context={"request": request,
+                     "recipe": recipe})
+        favorite_serializer.is_valid(raise_exception=True)
+        favorite_serializer.save(user=request.user,
+                                 recipe=recipe)
+        return Response(favorite_serializer.data,
+                        status=HTTP_201_CREATED)
 
     @favorite.mapping.delete
     def delete_favorite(self, request, pk):
         recipe = get_object_or_404(Recipe, pk=pk)
-        try:
-            is_favorite = Favorite.objects.get(user=request.user,
-                                               recipe=recipe)
-        except Favorite.DoesNotExist:
+        is_favorite = Favorite.objects.filter(user=request.user,
+                                              recipe=recipe).first()
+        if is_favorite is None:
             return Response({"errors":
-                             "Рецепт и так не является фаворитом!"},
+                            "Рецепт и так не является фаворитом!"},
                             status=HTTP_400_BAD_REQUEST)
         is_favorite.delete()
         return Response(status=HTTP_204_NO_CONTENT)
@@ -186,8 +177,7 @@ class RecipeViewSet(ModelViewSet):
     @shopping_cart.mapping.post
     def create_shopping_cart(self, request, pk):
         recipe = get_object_or_404(Recipe, pk=pk)
-        existing_cart = Cart.objects.filter(user=request.user,
-                                            recipe=recipe).first()
+        existing_cart = request.user.in_carts.filter(recipe=recipe).first()
         if existing_cart:
             return Response({"errors":
                              "Вы уже добавили этот рецепт в список покупок"},
@@ -202,14 +192,13 @@ class RecipeViewSet(ModelViewSet):
     @shopping_cart.mapping.delete
     def delete_shopping_cart(self, request, pk):
         recipe = get_object_or_404(Recipe, pk=pk)
-        try:
-            is_cart = Cart.objects.get(user=request.user,
-                                       recipe=recipe)
-        except Cart.DoesNotExist:
+        cart = Cart.objects.filter(user=request.user,
+                                   recipe=recipe).first()
+        if cart is None:
             return Response({"errors":
                              "Рецепт и так не добавлен в список покупок!"},
                             status=HTTP_400_BAD_REQUEST)
-        is_cart.delete()
+        cart.delete()
         return Response(status=HTTP_204_NO_CONTENT)
 
     @action(detail=False, methods=("get",))
@@ -229,9 +218,12 @@ class RecipeViewSet(ModelViewSet):
                     ingredients_list[str(ingredient)] += amount
                 else:
                     ingredients_list[str(ingredient)] = amount
-        response = HttpResponse("\n".join(map(
-            lambda ing: f"{str(ing[0])} - {ing[1]} ", ingredients_list.items()
-        )), content_type="text/plain",)
+
+        response = HttpResponse("\n".join(
+            [f"{ingredient} - {amount}" for ingredient,
+             amount in ingredients_list.items()]), content_type="text/plain")
+
         response["Content-Disposition"] = (
             f"attachment; filename='{str(user)}_shopping_cart.txt'")
+
         return response

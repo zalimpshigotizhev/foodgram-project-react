@@ -2,7 +2,7 @@ from rest_framework.permissions import SAFE_METHODS, BasePermission
 
 
 class IsAuthPermission(BasePermission):
-    """ Permissin либо просмотры рецептов, либо авторизован"""
+    """ Permissin либо просмотры рецептов, либо авторизован """
 
     def has_permission(self, request, view):
         return bool(request.method in SAFE_METHODS
@@ -10,7 +10,7 @@ class IsAuthPermission(BasePermission):
 
 
 class AuthorStaffOrReadOnly(IsAuthPermission):
-    """ Автор или только читать"""
+    """ Автор или только читать """
 
     def has_object_permission(self, request, view, obj):
         return (request.method in SAFE_METHODS

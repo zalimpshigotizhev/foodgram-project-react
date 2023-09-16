@@ -35,7 +35,7 @@ class CustomUser(AbstractUser):
     class Meta:
         verbose_name = "Пользователь"
         verbose_name_plural = "Пользователи"
-        ordering = ['last_name', 'first_name']
+        ordering = ["last_name", "first_name"]
 
 
 class Subscribe(models.Model):
@@ -43,20 +43,20 @@ class Subscribe(models.Model):
     user = models.ForeignKey(
         CustomUser,
         on_delete=models.CASCADE,
-        related_name='subscriptions',
+        related_name="subscriptions",
     )
     author = models.ForeignKey(
         CustomUser,
         on_delete=models.CASCADE,
-        related_name='subscribers',
+        related_name="subscribers",
     )
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
-        unique_together = ('user', 'author')
+        unique_together = ("user", "author")
         verbose_name = "Подписка"
         verbose_name_plural = "Подписки"
-        ordering = ['created_at']
+        ordering = ["created_at"]
 
     def __str__(self):
         return f"{self.user.username} -> {self.author.username}"

@@ -8,7 +8,13 @@ from PIL import Image
 from api.core import (DEFAULT_INGR,
                       MAX_SIZE_IMAGE,
                       MAX_TIME_COOK,
-                      MIN_TIME_COOK)
+                      MIN_TIME_COOK,
+                      MIN_COUNT_INGR,
+                      MAX_COUNT_INGR,
+                      MAX_LENGTH_NAME_RECIPE,
+                      MAX_LENGTH_NAME_INGR,
+                      MAX_LENGTH_NAME_TAG,
+                      MAX_LENGTH_MEASUR_UNIT)
 
 User = get_user_model()
 
@@ -18,12 +24,11 @@ class Tag(models.Model):
 
     name = models.CharField(
         ('название тэга'),
-        max_length=64,
+        max_length=MAX_LENGTH_NAME_TAG,
         unique=True,
     )
     color = models.CharField(
         ('цвет'),
-        max_length=64,
         unique=True,
 
     )
@@ -53,12 +58,12 @@ class Ingredient(models.Model):
 
     name = models.CharField(
         ('наименование'),
-        max_length=64,
+        max_length=MAX_LENGTH_NAME_INGR,
         unique=True,)
 
     measurement_unit = models.CharField(
         ('единица измерения'),
-        max_length=64,)
+        max_length=MAX_LENGTH_MEASUR_UNIT,)
 
     class Meta:
         verbose_name = 'Ингредиент'
@@ -74,7 +79,7 @@ class Recipe(models.Model):
 
     name = models.CharField(
         verbose_name=('Название рецепта'),
-        max_length=56)
+        max_length=MAX_LENGTH_NAME_RECIPE)
 
     author = models.ForeignKey(
         User,
@@ -106,8 +111,7 @@ class Recipe(models.Model):
         upload_to='recipe_img/',)
 
     text = models.TextField(
-        verbose_name=('Текст'),
-        max_length=1024)
+        verbose_name=('Текст'),)
 
     cooking_time = models.PositiveSmallIntegerField(
         verbose_name=('Время приготовления'),
@@ -144,7 +148,8 @@ class CountIngredient(models.Model):
 
     recipe = models.ForeignKey(
         Recipe,
-        on_delete=models.CASCADE)
+        on_delete=models.CASCADE,
+        related_name='amount')
 
     ingredient = models.ForeignKey(
         Ingredient,
@@ -152,14 +157,14 @@ class CountIngredient(models.Model):
 
     amount = models.PositiveSmallIntegerField(
         verbose_name=('Количество'),
-        default=1,
+        default=DEFAULT_INGR,
         validators=(
             MinValueValidator(
-                1,
+                MIN_COUNT_INGR,
                 'Нужен хоть грамм/мл!'
             ),
             MaxValueValidator(
-                3200,
+                MAX_COUNT_INGR,
                 'Слишком много!')
         )
     )
@@ -178,27 +183,27 @@ class Favorite(models.Model):
 
     user = models.ForeignKey(
         User,
-        related_name='in_favorites',
-        verbose_name=('пользователь'),
+        related_name="in_favorites",
+        verbose_name=("пользователь"),
         on_delete=models.CASCADE
     )
     recipe = models.ForeignKey(
         Recipe,
-        related_name='is_favorited',
-        verbose_name=('рецепт'),
+        related_name="is_favorited",
+        verbose_name=("рецепт"),
         on_delete=models.CASCADE
     )
     date_added = models.DateTimeField(
-        verbose_name='Дата и время add',
+        verbose_name="Дата и время add",
         auto_now_add=True
     )
 
     class Meta:
-        verbose_name = 'Избранный рецепт'
-        verbose_name_plural = 'Избранные рецепты'
+        verbose_name = "Избранный рецепт"
+        verbose_name_plural = "Избранные рецепты"
 
     def __str__(self) -> str:
-        return f'{self.user} добавил в фавориты рецепт {self.recipe}'
+        return f"{self.user} добавил в фавориты рецепт {self.recipe}"
 
 
 class Cart(models.Model):
@@ -206,25 +211,25 @@ class Cart(models.Model):
 
     recipe = models.ForeignKey(
         Recipe,
-        verbose_name='Рецепты списка покупок',
-        related_name='in_carts',
+        verbose_name="Рецепты списка покупок",
+        related_name="in_carts",
         on_delete=models.CASCADE
     )
     user = models.ForeignKey(
         User,
-        verbose_name='Автор списка покупок',
-        related_name='in_carts',
+        verbose_name="Автор списка покупок",
+        related_name="in_carts",
         on_delete=models.CASCADE
     )
     date_add = models.DateTimeField(
-        verbose_name='Дата и время добавления',
+        verbose_name="Дата и время добавления",
         auto_now=True,
     )
 
     class Meta:
-        verbose_name = 'Список покупок'
-        verbose_name_plural = 'Списки покупок'
+        verbose_name = "Список покупок"
+        verbose_name_plural = "Списки покупок"
         ordering = ["recipe"]
 
     def __str__(self):
-        return f'{self.user} добавил в список покупок {self.recipe}'
+        return f"{self.user} добавил в список покупок {self.recipe}"
