@@ -142,6 +142,10 @@ class RecipeSerializer(ModelSerializer):
 
         for ingredient in data_ingredients:
             amount = ingredient['amount']
+            try:
+                amount = int(amount)
+            except ValueError:
+                raise ValidationError("Кол-ство должно быть числом.")
             if amount > 3200:
                 raise ValidationError("Кол-ство не должно превышать 3200.")
 
