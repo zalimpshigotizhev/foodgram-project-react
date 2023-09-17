@@ -15,12 +15,10 @@ from djoser.views import UserViewSet as DjUserViewSet
 from users.models import CustomUser, Subscribe
 from api.paginators import CustomPagination, RecipePagination
 from api.permissions import OwnerUserOrReadOnly
-from recipes.models import (Favorite,
-                            Tag,
+from recipes.models import (Tag,
                             Ingredient,
                             CountIngredient,
-                            Recipe,
-                            Cart)
+                            Recipe,)
 from api.serializers import (FavoriteSerializer, ShortRecipeSerializer,
                              TagSerializer,
                              IngredientSerializer,
