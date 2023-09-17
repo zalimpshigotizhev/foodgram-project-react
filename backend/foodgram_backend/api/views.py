@@ -10,7 +10,6 @@ from django.contrib.auth import get_user_model
 from rest_framework.status import (HTTP_400_BAD_REQUEST,
                                    HTTP_204_NO_CONTENT,
                                    HTTP_201_CREATED)
-
 from djoser.views import UserViewSet as DjUserViewSet
 
 from users.models import CustomUser, Subscribe
@@ -65,8 +64,7 @@ class CustomUserViewSet(DjUserViewSet):
     def delete_subscribe(self, request, id):
         author = get_object_or_404(CustomUser, id=id)
 
-        subscription = Subscribe.objects.filter(user=request.user,
-                                                author=author).first()
+        subscription = author.subscribers.filter(user=request.user).first()
         if subscription is None:
             return Response({"error": "Вы уже отписались!"},
                             status=HTTP_400_BAD_REQUEST)
@@ -158,8 +156,7 @@ class RecipeViewSet(ModelViewSet):
     @favorite.mapping.delete
     def delete_favorite(self, request, pk):
         recipe = get_object_or_404(Recipe, pk=pk)
-        is_favorite = Favorite.objects.filter(user=request.user,
-                                              recipe=recipe).first()
+        is_favorite = recipe.is_favorited.filter(user=request.user).first()
         if is_favorite is None:
             return Response({"errors":
                             "Рецепт и так не является фаворитом!"},
@@ -185,8 +182,7 @@ class RecipeViewSet(ModelViewSet):
                              "Вы уже добавили этот рецепт в список покупок"},
                             status=HTTP_400_BAD_REQUEST)
 
-        link_cart = Cart.objects.create(user=request.user,
-                                        recipe=recipe)
+        link_cart = recipe.in_carts.create(user=request.user)
         link_cart.save()
         serializer = self.add_serializer(recipe)
         return Response(serializer.data, status=HTTP_201_CREATED)
@@ -194,8 +190,7 @@ class RecipeViewSet(ModelViewSet):
     @shopping_cart.mapping.delete
     def delete_shopping_cart(self, request, pk):
         recipe = get_object_or_404(Recipe, pk=pk)
-        cart = Cart.objects.filter(user=request.user,
-                                   recipe=recipe).first()
+        cart = recipe.in_carts.filter(user=request.user).first()
         if cart is None:
             return Response({"errors":
                              "Рецепт и так не добавлен в список покупок!"},

@@ -12,7 +12,7 @@ from .models import (
 
 class RecipeIngredientInline(admin.TabularInline):
     model = CountIngredient
-
+    min_num = 1
 
 @admin.register(Recipe)
 class RecipeAdmin(admin.ModelAdmin):

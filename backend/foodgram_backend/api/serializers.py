@@ -150,16 +150,14 @@ class RecipeSerializer(ModelSerializer):
             except ValueError:
                 raise ValidationError("Кол-ство должно быть числом.")
             if amount > MAX_COUNT_INGR:
-                raise ValidationError("Кол-ство не должно превышать 3200.")
+                raise ValidationError("Кол-ство не должно превышать 32 000.")
 
         list_id_amount = id_and_amount_pull_out_from_dict(Ingredient,
                                                           data_ingredients)
 
         # Нахождение тэгов
-
-        try:
-            tags_obj = get_object_or_404(Tag, id=id_tags)
-        except Tag.DoesNotExist:
+        tags_obj = Tag.objects.filter(id__in=id_tags)
+        if not tags_obj.exists():
             raise ValueError("Такого тэга нет")
 
         data.update(
@@ -228,7 +226,7 @@ class UserSubscribeSerializer(CustomUserSerializer):
     def get_recipes(self, obj):
         request = self.context["request"]
         recipes_limit = request.query_params.get("recipes_limit")
-        recipes_auth = Recipe.objects.filter(author=obj)
+        recipes_auth = obj.recipes.all()
 
         if recipes_limit is not None:
             recipes_auth = recipes_auth[:int(recipes_limit)]
