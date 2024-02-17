@@ -1,10 +1,16 @@
 # FOODGRAM
-# АВТОР __ ПШИГОТИЖЕВ ЗАЛИМ
-Админка:
-Zalim
-552216742
-# Добро пожаловать на Foodgram!
 
+## СТЕК:
+django-filter==21.1
+djangorestframework==3.14.0
+djoser==2.1.0
+python-decouple==3.5
+drf-extra-fields==3.2.1
+gunicorn==20.1.0
+Pillow==9.3.0
+psycopg2-binary==2.9.3
+
+# Добро пожаловать на Foodgram!
 На нашем сайте "Foodgram" вы сможете окунуться в мир кулинарных удовольствий и поделиться своими рецептами с другими гурманами. Наш сайт предоставляет широкий спектр функциональных возможностей для истинных ценителей еды.
 
 ## Основные функции Foodgram:
@@ -53,12 +59,4 @@ POSTGRES_DB=django
 DB_HOST=db
 DB_PORT=5432
 
-## СТЕК:
-django-filter==21.1
-djangorestframework==3.14.0
-djoser==2.1.0
-python-decouple==3.5
-drf-extra-fields==3.2.1
-gunicorn==20.1.0
-Pillow==9.3.0
-psycopg2-binary==2.9.3
+
