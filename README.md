@@ -8,15 +8,15 @@
 ![](https://github.com/zalimpshigotizhev/foodgram-project-react/blob/master/pic/django_1.png)
 ![](https://github.com/zalimpshigotizhev/foodgram-project-react/blob/master/pic/drf.png)
 
-
-django-filter==21.1
-djangorestframework==3.14.0
-djoser==2.1.0
-python-decouple==3.5
-drf-extra-fields==3.2.1
-gunicorn==20.1.0
-Pillow==9.3.0
-psycopg2-binary==2.9.3
+### А также:
+##### django-filter==21.1 
+##### djangorestframework==3.14.0
+##### djoser==2.1.0
+##### python-decouple==3.5
+##### drf-extra-fields==3.2.1
+##### gunicorn==20.1.0
+##### Pillow==9.3.0
+##### psycopg2-binary==2.9.3
 
 ## Основные функции Foodgram:
 ![](https://github.com/zalimpshigotizhev/foodgram-project-react/blob/master/pic/2-100.jpg)
