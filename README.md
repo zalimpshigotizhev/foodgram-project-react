@@ -14,6 +14,7 @@ Pillow==9.3.0
 psycopg2-binary==2.9.3
 
 ## Основные функции Foodgram:
+![](https://github.com/zalimpshigotizhev/foodgram-project-react/blob/master/pic/2-100.jpg)
 
 ### Регистрация и Авторизация
 
