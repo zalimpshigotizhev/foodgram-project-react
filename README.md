@@ -4,6 +4,11 @@
 На нашем сайте "Foodgram" вы сможете окунуться в мир кулинарных удовольствий и поделиться своими рецептами с другими гурманами. Наш сайт предоставляет широкий спектр функциональных возможностей для истинных ценителей еды.
 
 ## СТЕК:
+![](https://github.com/zalimpshigotizhev/foodgram-project-react/blob/master/pic/python39_1.png)
+![](https://github.com/zalimpshigotizhev/foodgram-project-react/blob/master/pic/django_1.png)
+![](https://github.com/zalimpshigotizhev/foodgram-project-react/blob/master/pic/drf.png)
+
+
 django-filter==21.1
 djangorestframework==3.14.0
 djoser==2.1.0
