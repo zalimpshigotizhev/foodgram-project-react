@@ -1,44 +1,53 @@
+---
 version: '3.3'
-volumes:
-  pg_data:
-  media_dir:
-  static_dir:
-
 services:
-  db:
-    image: postgres:13.10
-    env_file: ../backend/foodgram_backend/.env
+
+  frontend:
+    container_name: foodgram-front
+    # image: xewus/foodgram_front:latest
+    build: ../frontend
     volumes:
-      - pg_data:/var/lib/postgresql/data
+      - ./frontend/:/app/result_build/
+
+  db:
+    container_name: foodgram-db
+    image: postgres:13.0-alpine
+    restart: always
+    volumes:
+      - postgres_data:/var/lib/postgresql/data/
+    env_file:
+      - ../.env
 
   backend:
-    build:
-      dockerfile: Dockerfile
-      context: ../backend/foodgram_backend/
-    env_file: ../backend/foodgram_backend/.env
+    container_name: foodgram-app
+    # image: xewus/foodgram_back:latest
+    build: ../backend/foodgram_backend
     restart: always
     volumes:
       - static_dir:/app/static/
       - media_dir:/app/media/
-    depends_on:
-      - db
-    ports:
-      - 8000:8000
-    
-  frontend:
-    build:
-      context: ../frontend
-      dockerfile: Dockerfile
-    volumes:
-      - ../frontend/:/app/result_build/
+    env_file:
+      - ../.env
 
   nginx:
-    image: nginx:1.19.3
+    container_name: foodgram-proxy
+    image: nginx:1.23.3-alpine
+    restart: always
     ports:
-      - 8001:80
+      # - 8001:80
+      - 80:80
     volumes:
       - ./nginx.conf:/etc/nginx/conf.d/default.conf
-      - ../frontend/build:/usr/share/nginx/html/
-      - ../docs/:/usr/share/nginx/html/api/docs/
-      - static_dir:/etc/nginx/html/backend_static/
+      - ./frontend/build:/usr/share/nginx/html/
+      - ./docs/:/usr/share/nginx/html/api/docs/
+      - static_dir:/etc/nginx/html/static/
       - media_dir:/etc/nginx/html/media/
+    depends_on:
+      - backend
+      - frontend
+
+volumes:
+  static_dir:
+  media_dir:
+  postgres_data:
+...
