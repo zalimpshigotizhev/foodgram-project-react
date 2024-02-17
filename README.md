@@ -1,4 +1,6 @@
 # Добро пожаловать на Foodgram!
+![](https://github.com/zalimpshigotizhev/foodgram-project-react/blob/master/pic/1-100.jpg)
+
 На нашем сайте "Foodgram" вы сможете окунуться в мир кулинарных удовольствий и поделиться своими рецептами с другими гурманами. Наш сайт предоставляет широкий спектр функциональных возможностей для истинных ценителей еды.
 
 ## СТЕК:
@@ -12,6 +14,7 @@ Pillow==9.3.0
 psycopg2-binary==2.9.3
 
 ## Основные функции Foodgram:
+![](https://github.com/zalimpshigotizhev/foodgram-project-react/blob/master/pic/2-100.jpg)
 
 ### Регистрация и Авторизация
 
